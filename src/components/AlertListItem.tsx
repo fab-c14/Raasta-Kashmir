@@ -29,8 +29,13 @@ export const AlertListItem: React.FC<AlertListItemProps> = ({ event }) => {
         <Icon size={16} color={color} strokeWidth={2} />
       </View>
       <View style={styles.body}>
-        <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>{title}</Text>
-        <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 1 }]}>
+        <Text style={[typography.titleMedium, { color: colors.textPrimary }]} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text
+          style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 1 }]}
+          numberOfLines={2}
+        >
           {event.message}
         </Text>
       </View>

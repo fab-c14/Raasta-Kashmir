@@ -14,6 +14,7 @@ import { TextInput, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { Mail, Lock, User, Phone, AlertCircle } from 'lucide-react-native';
+import { BrandMark } from '../components/BrandMark';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/types';
 import { UserRole } from '../types/auth';
@@ -189,7 +190,8 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           
           <View style={styles.headerSection}>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>Create Portal Account</Text>
+            <BrandMark size={56} />
+            <Text style={[styles.title, { color: colors.textPrimary, marginTop: 12 }]}>Create your account</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Join Raasta Kashmir to ensure safe journeys</Text>
           </View>
 
@@ -299,7 +301,7 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             {/* Dynamic Role Fields */}
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.surface }]} />
             <Text style={[styles.roleFieldsHeader, { color: colors.textSecondary }]}>
               {role.toUpperCase()} PROFILE INFORMATION
             </Text>
@@ -357,6 +359,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   headerSection: {
+    alignItems: 'center',
     marginBottom: 20,
   },
   title: {
@@ -423,7 +426,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
     marginVertical: 16,
   },
   roleFieldsHeader: {

@@ -29,7 +29,10 @@ export const TripCard: React.FC<TripCardProps> = ({ trip, onPress }) => {
           <Text style={[typography.titleMedium, { color: colors.textPrimary }]} numberOfLines={1}>
             {trip.routeName}
           </Text>
-          <Text style={[typography.bodySmall, { color: colors.textSecondary, marginVertical: 3 }]}>
+          <Text
+            style={[typography.bodySmall, { color: colors.textSecondary, marginVertical: 3 }]}
+            numberOfLines={1}
+          >
             {formatDate(trip.startedAt)} · {formatDuration((trip.endedAt ?? trip.startedAt) - trip.startedAt)} · {formatKm(trip.distanceKm)}
           </Text>
           <View style={styles.badges}>
@@ -53,5 +56,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   body: { flex: 1, paddingHorizontal: 12 },
-  badges: { flexDirection: 'row', gap: 6 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
 });

@@ -16,17 +16,19 @@ export interface ThemeColors {
   gradientEnd: string;
 }
 
+// Papery palette: warm paper surfaces and stone-toned text so the brand
+// green reads like ink on paper rather than pixels on glass.
 export const lightColors: ThemeColors = {
   primary: '#16A34A',
   primaryDark: '#15803D',
   aiAccent: '#7C3AED',
   secondaryAccent: '#0EA5E9',
-  background: '#F8FAFC',
+  background: '#FAF7F1',
   card: '#FFFFFF',
-  surface: '#F1F5F9',
-  border: '#E2E8F0',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
+  surface: '#F1EDE3',
+  border: '#E5DFD1',
+  textPrimary: '#221F1A',
+  textSecondary: '#7A7263',
   success: '#22C55E',
   warning: '#F59E0B',
   danger: '#EF4444',
@@ -39,12 +41,12 @@ export const darkColors: ThemeColors = {
   primaryDark: '#16A34A',
   aiAccent: '#A78BFA',
   secondaryAccent: '#38BDF8',
-  background: '#0F172A',
-  card: '#1E293B',
-  surface: '#334155',
-  border: '#475569',
-  textPrimary: '#F8FAFC',
-  textSecondary: '#94A3B8',
+  background: '#181512',
+  card: '#231F1A',
+  surface: '#2E2923',
+  border: '#413A31',
+  textPrimary: '#F5F1E8',
+  textSecondary: '#A69E8E',
   success: '#4ADE80',
   warning: '#FBBF24',
   danger: '#F87171',
@@ -69,26 +71,27 @@ export const roundness = {
   full: 9999,
 };
 
+// Warm, low shadows — paper casts soft shadows, not glassy ones.
 export const shadows = {
   sm: {
-    shadowColor: '#000',
+    shadowColor: '#3D3426',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: '#3D3426',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 7,
+    elevation: 2,
   },
   lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowColor: '#3D3426',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 4,
   },
 };

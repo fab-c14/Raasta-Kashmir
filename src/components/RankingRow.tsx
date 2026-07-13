@@ -26,10 +26,10 @@ export const RankingRow: React.FC<RankingRowProps> = ({ ranking, position }) => 
         <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>{position}</Text>
       </View>
       <View style={styles.body}>
-        <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>
+        <Text style={[typography.titleMedium, { color: colors.textPrimary }]} numberOfLines={1}>
           {ranking.driverName}
         </Text>
-        <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
+        <Text style={[typography.bodySmall, { color: colors.textSecondary }]} numberOfLines={1}>
           {ranking.busNo} · {ranking.tripsCompleted} trips · {ranking.violations} violations
         </Text>
       </View>

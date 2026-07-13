@@ -13,7 +13,8 @@ import {
 import { TextInput, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../hooks/useAppTheme';
-import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, ShieldCheck } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react-native';
+import { BrandMark } from '../components/BrandMark';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/types';
 
@@ -66,8 +67,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         >
           {/* Logo & Tagline */}
           <View style={styles.headerSection}>
-            <View style={[styles.logoIconContainer, { backgroundColor: colors.primary + '15' }]}>
-              <ShieldCheck size={36} color={colors.primary} />
+            <View style={styles.logoIconContainer}>
+              <BrandMark size={76} />
             </View>
             <Text style={[styles.logoText, { color: colors.textPrimary }]}>Raasta Kashmir</Text>
             <Text style={[styles.tagline, { color: colors.textSecondary }]}>
@@ -162,7 +163,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               ) : (
                 <View style={styles.buttonInner}>
                   <LogIn size={18} color="#FFFFFF" style={styles.btnIcon} />
-                  <Text style={styles.submitText}>Authenticate Session</Text>
+                  <Text style={styles.submitText}>Sign in</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -184,7 +185,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           {/* Quick Access Credentials Banner */}
-          <View style={[styles.quickAccessCard, { backgroundColor: colors.surface }]}>
+          <View style={[styles.quickAccessCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.quickAccessTitle, { color: colors.textPrimary }]}>Quick Demo logins (pwd: password123):</Text>
             <Text style={[styles.quickAccessCreds, { color: colors.textSecondary }]}>• driver@raasta.com  • parent@raasta.com</Text>
             <Text style={[styles.quickAccessCreds, { color: colors.textSecondary }]}>• school@raasta.com  • rto@raasta.com</Text>
@@ -213,9 +214,6 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   logoIconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -317,7 +315,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   quickAccessTitle: {
     fontFamily: 'Poppins-SemiBold',

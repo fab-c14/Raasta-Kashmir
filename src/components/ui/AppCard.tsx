@@ -8,11 +8,19 @@ interface AppCardProps {
   accent?: 'default' | 'ai' | 'danger';
 }
 
-/** Rounded, softly shadowed card — the base surface of every screen. */
+/**
+ * Rounded, softly shadowed card — the base surface of every screen.
+ * Accented cards get a uniform tinted border all the way around (never a
+ * single colored edge).
+ */
 export const AppCard: React.FC<AppCardProps> = ({ children, style, accent = 'default' }) => {
   const { colors, roundness, shadows, spacing } = useAppTheme();
   const borderColor =
-    accent === 'ai' ? colors.aiAccent : accent === 'danger' ? colors.danger : colors.border;
+    accent === 'ai'
+      ? `${colors.aiAccent}66`
+      : accent === 'danger'
+        ? `${colors.danger}66`
+        : colors.border;
 
   return (
     <View
@@ -24,7 +32,7 @@ export const AppCard: React.FC<AppCardProps> = ({ children, style, accent = 'def
           borderRadius: roundness.lg,
           borderColor,
           padding: spacing.md,
-          borderLeftWidth: accent === 'default' ? StyleSheet.hairlineWidth : 3,
+          borderWidth: accent === 'default' ? StyleSheet.hairlineWidth : 1,
         },
         style,
       ]}
@@ -35,5 +43,5 @@ export const AppCard: React.FC<AppCardProps> = ({ children, style, accent = 'def
 };
 
 const styles = StyleSheet.create({
-  card: { borderWidth: StyleSheet.hairlineWidth },
+  card: { overflow: 'hidden' },
 });

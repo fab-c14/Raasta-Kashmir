@@ -18,7 +18,10 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({ title, children })
     <AppCard accent="ai" style={{ marginBottom: spacing.md }}>
       <View style={styles.header}>
         <Sparkles size={16} color={colors.aiAccent} strokeWidth={2} />
-        <Text style={[typography.titleMedium, { color: colors.aiAccent, marginLeft: 8 }]}>
+        <Text
+          style={[typography.titleMedium, styles.title, { color: colors.aiAccent }]}
+          numberOfLines={2}
+        >
           {title}
         </Text>
       </View>
@@ -29,4 +32,5 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({ title, children })
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center' },
+  title: { flex: 1, marginLeft: 8 },
 });

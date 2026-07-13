@@ -22,9 +22,14 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   return (
     <View style={[styles.row, { paddingVertical: spacing.lg }]}>
       <View style={styles.titles}>
-        <Text style={[typography.h2, { color: colors.textPrimary }]}>{title}</Text>
+        <Text style={[typography.h2, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+          {title}
+        </Text>
         {subtitle ? (
-          <Text style={[typography.bodyMedium, { color: colors.textSecondary, marginTop: 2 }]}>
+          <Text
+            style={[typography.bodyMedium, { color: colors.textSecondary, marginTop: 2 }]}
+            numberOfLines={2}
+          >
             {subtitle}
           </Text>
         ) : null}

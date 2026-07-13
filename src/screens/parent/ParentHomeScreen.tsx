@@ -48,7 +48,9 @@ const ParentHomeScreen: React.FC = () => {
             <AppCard style={{ marginTop: spacing.md }} accent={bus.status === 'sos' ? 'danger' : 'default'}>
               <View style={styles.etaRow}>
                 <View style={styles.etaText}>
-                  <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>Arriving at {bus.nextStop}</Text>
+                  <Text style={[typography.bodySmall, { color: colors.textSecondary }]} numberOfLines={1}>
+                    Arriving at {bus.nextStop}
+                  </Text>
                   <Text style={[typography.h1, { color: colors.textPrimary }]}>
                     {bus.etaMinutes}
                     <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}> min</Text>

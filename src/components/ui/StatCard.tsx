@@ -21,8 +21,18 @@ export const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, ti
       <View style={[styles.iconWrap, { backgroundColor: `${iconColor}1A` }]}>
         <Icon size={18} color={iconColor} strokeWidth={2} />
       </View>
-      <Text style={[typography.h3, { color: colors.textPrimary, marginTop: 10 }]}>{value}</Text>
-      <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 2 }]}>
+      <Text
+        style={[typography.h3, { color: colors.textPrimary, marginTop: 10 }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
+      >
+        {value}
+      </Text>
+      <Text
+        style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 2 }]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
     </AppCard>

@@ -52,10 +52,13 @@ const ProfileScreen: React.FC = () => {
             ]}
           >
             <Icon size={16} color={colors.textSecondary} />
-            <Text style={[typography.bodyMedium, { color: colors.textSecondary, flex: 1, marginLeft: 12 }]}>
+            <Text style={[typography.bodyMedium, { color: colors.textSecondary, marginLeft: 12 }]}>
               {label}
             </Text>
-            <Text style={[typography.titleMedium, { color: colors.textPrimary }]} numberOfLines={1}>
+            <Text
+              style={[typography.titleMedium, styles.rowValue, { color: colors.textPrimary }]}
+              numberOfLines={1}
+            >
               {value}
             </Text>
           </View>
@@ -88,6 +91,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  rowValue: { flex: 1, textAlign: 'right', marginLeft: 12 },
   modeRow: { flexDirection: 'row', alignItems: 'center' },
 });
 
