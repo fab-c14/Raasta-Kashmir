@@ -67,6 +67,34 @@ server/         Node + Express + Socket.IO + MongoDB + Gemini
 
 Safety detection (overspeed, long-stop, route-deviation with cooldowns) runs on the driver's phone from pure GPS — the core hackathon constraint. The same engine (`src/utils/tripMonitor.ts`) powers the demo simulator and the live driver app.
 
+## For collaborators — read this before running
+
+Every feature is documented in **[FEATURES.md](FEATURES.md)** (what it does, how it works, which files implement it).
+
+**⚠️ This project is pinned to Expo SDK 54.** Expo Go only runs one SDK version, so the Expo Go on your phone must be the **SDK 54 build** — the current Play Store version (SDK 57) will show *"Project is incompatible with this version of Expo Go"*.
+
+Setup that works:
+
+```bash
+git clone https://github.com/fab-c14/Raasta-Kashmir.git
+cd Raasta-Kashmir
+cp .env.example .env      # empty values = demo mode, nothing to fill
+npm install
+npx expo start -c
+```
+
+Then on your phone install the **SDK 54** Expo Go from https://expo.dev/go (pick SDK 54 → Android → Install) and scan the QR. Phone and computer must be on the **same Wi-Fi**; if the QR connects but hangs, run `npx expo start -c --tunnel` instead.
+
+**If you cloned before 13 Jul 2026:** history was rewritten — don't `git pull`. Run `git fetch origin && git reset --hard origin/main` or re-clone.
+
+| Symptom | Fix |
+| --- | --- |
+| "Project is incompatible with this version of Expo Go" | Install the SDK 54 Expo Go from expo.dev/go |
+| Stuck on "New update available, downloading…" / blank screen | `npx expo start -c` (clear Metro cache) |
+| Phone can't reach Metro | Same Wi-Fi, or use `--tunnel` |
+| `Unable to resolve module …` after pulling | `rm -rf node_modules && npm install` |
+| Login fails | Use `driver@raasta.com` / `password123` (mock mode) |
+
 ## Demo logins (mock auth, password `password123`)
 
 | Role | Email |
