@@ -1,88 +1,77 @@
 # Raasta Kashmir
 
-### *Every School Trip. Safe. Smart. Connected.*
+**Every School Trip. Safe. Smart. Connected.**
 
-Raasta Kashmir is an AI-powered School Transport Safety Platform built using React Native and Expo. It is designed to modernize and secure school transportation without requiring external IoT sensors, CCTV, or extra hardware—relying entirely on the driver's Android phone.
+An AI-powered School Transport Safety Platform for Parents, Schools, Bus Drivers and Transport Authorities (RTO) — built to work with **only the driver's Android phone**. No IoT, no CCTV, no extra hardware.
 
-The platform provides dedicated, custom dashboards for four main user groups:
-*   **Drivers**: Start/end trips, view active routes, monitor speed, view AI safety scores, and trigger emergency SOS signals.
-*   **Parents**: Track assigned school buses in real-time, view dynamic ETAs, and receive immediate safety/SOS alerts.
-*   **Schools**: Monitor fleet locations, review driver performance rankings, and analyze safety logs.
-*   **Road Transport Office (RTO)**: View vehicle compliance, check speed violation histories, and inspect safety diagnostics.
+## Quick start (demo mode — zero keys needed)
 
----
-
-## 🛠 Tech Stack
-
-### Frontend & UI
-*   **Framework**: React Native with Expo (v57.0.0)
-*   **Design System**: React Native Paper (Material 3 inspired)
-*   **Navigation**: React Navigation (Stack)
-*   **Typography**: Poppins Font (Weights 300, 400, 500, 600, 700)
-*   **Icons**: Lucide Icons (lucide-react-native)
-*   **Animations**: React Native Reanimated
-
-### Backend & Services
-*   **State Management**: Context API
-*   **Authentication**: Firebase Auth (with automatic persistent local mock-mode fallback)
-*   **Storage**: `@react-native-async-storage/async-storage`
-
----
-
-## 📁 Project Structure
-
-This project follows **Clean Architecture** principles:
-
-```
-src/
-├── config/       # Configuration layers (Firebase, environment)
-├── context/      # Global state providers (Auth, Navigation states)
-├── theme/        # Centralized theme palettes and spacing configurations
-├── types/        # TypeScript interface definitions
-├── services/     # API connection and authentication logic
-├── screens/      # Dynamic role-based user interfaces
-├── navigation/   # Type-safe router stack setups
-└── hooks/        # Custom reusable React hooks (e.g. useAppTheme)
+```bash
+cp .env.example .env   # empty values are fine
+npm install
+npm start              # scan the QR with Expo Go (Android)
 ```
 
----
+With an empty `.env` the entire platform runs live and self-contained:
 
-## 🚀 Getting Started
+- **Mock auth** — log in as any role: `driver@raasta.com`, `parent@raasta.com`, `school@raasta.com`, `rto@raasta.com` (password `password123`), or sign up.
+- **Simulated bus** — a demo bus drives the Srinagar route (Lal Chowk → Kashmir Valley School) in real time with scripted overspeed + long-stop events, so parent/school/RTO dashboards are alive instantly.
+- **Driver GPS** — real phone GPS when permission is granted; automatic drive simulation on emulators.
+- **On-device AI fallback** — safety scores, trip summaries, complaint triage and weekly insights are generated deterministically from telemetry.
 
-### Prerequisites
-*   [Node.js](https://nodejs.org/) (v18+)
-*   [Expo Go](https://expo.dev/client) app installed on your physical device (Android or iOS)
+## Going live — everything is switched by `.env` alone
 
-### Installation
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/fab-c14/Raasta-Kashmir.git
-    cd Raasta-Kashmir
-    ```
+| Set in `.env` | What switches to live |
+| --- | --- |
+| `EXPO_PUBLIC_API_URL` (+ optional `EXPO_PUBLIC_SOCKET_URL`) | REST + Socket.IO realtime via the Express server |
+| `MONGODB_URI` | Trip/complaint persistence in MongoDB (else in-memory) |
+| `GEMINI_API_KEY` | Real Gemini AI Safety Copilot (else heuristic fallback) |
+| `EXPO_PUBLIC_FIREBASE_*` | Real Firebase Authentication (else mock auth) |
 
-2.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
+Run the backend (reads the **same root `.env`**):
 
-3.  **Start the Metro Bundler**:
-    ```bash
-    npm run start
-    ```
+```bash
+cd server
+npm install
+npm start        # http://localhost:4000/health shows db + ai mode
+```
 
-### Running on a Device
-*   **Physical Android / iOS device**: Scan the QR code printed in the terminal using the **Expo Go** application. Ensure both your computer and phone are connected to the same local Wi-Fi.
-*   **Emulator**: Press `a` in your terminal to boot up an Android Emulator, or `i` for iOS Simulator.
+Then set `EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:4000` and restart Expo.
 
----
+## Roles & features
 
-## 🔑 Demo Access Logins (Mock Authentication)
+- **Driver** — start/end trip, live map + speed vs limit, live AI safety score, emergency SOS, AI trip summary & safety review, trip history.
+- **Parent** — live bus tracking, ETA + next stop, realtime safety alerts (overspeed / long stop / route deviation / SOS), driver safety score, AI-triaged complaint submission.
+- **School** — fleet monitor with live buses, SOS banner, complaints with AI categorization, driver rankings, AI weekly insights.
+- **RTO** — compliance dashboard (fitness/insurance/permit), violation history, driver rankings, fleet analytics.
 
-For the hackathon demonstration, the application launches in **Mock Authentication** mode automatically if custom Firebase configurations are absent. Use the following profiles to inspect role portals (default password: `password123`):
+## Architecture
 
-| Role | Demo Email | Core Dashboard Feature |
-| :--- | :--- | :--- |
-| **Driver** | `driver@raasta.com` | Speed dial, active trip controller, SOS trigger |
-| **Parent** | `parent@raasta.com` | Real-time ETA, bus status logs, driver safety badges |
-| **School** | `school@raasta.com` | Fleet active counter, driver ranking statistics |
-| **RTO Authority** | `rto@raasta.com` | Srinagar compliance metrics, speed violations report logs |
+```
+src/            Expo SDK 57 + React Native + TypeScript (clean architecture)
+  api/          axios client
+  components/   reusable UI (cards, skeletons, score ring, live map…)
+  config/       env switching (demo ↔ live)
+  constants/    safety thresholds, demo route
+  context/      Auth, Trip (GPS + detection engine)
+  hooks/        useAppTheme, useBusTracking
+  navigation/   role-based bottom tabs + stacks
+  screens/      driver / parent / school / rto / shared
+  services/     realtime (Socket.IO ↔ simulator), trips, AI copilot
+  theme/        palette, typography (Poppins), Paper/Navigation themes
+  types/        strict domain types (no `any`)
+  utils/        geo math, trip safety monitor, formatting
+
+server/         Node + Express + Socket.IO + MongoDB + Gemini
+```
+
+Safety detection (overspeed, long-stop, route-deviation with cooldowns) runs on the driver's phone from pure GPS — the core hackathon constraint. The same engine (`src/utils/tripMonitor.ts`) powers the demo simulator and the live driver app.
+
+## Demo logins (mock auth, password `password123`)
+
+| Role | Email |
+| --- | --- |
+| Driver | `driver@raasta.com` |
+| Parent | `parent@raasta.com` |
+| School | `school@raasta.com` |
+| RTO | `rto@raasta.com` |

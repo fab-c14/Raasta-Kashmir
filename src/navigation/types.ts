@@ -1,4 +1,5 @@
 import { UserRole } from '../types/auth';
+import { Trip } from '../types/trip';
 
 export type AuthStackParamList = {
   Login: undefined;
@@ -6,8 +7,33 @@ export type AuthStackParamList = {
 };
 
 export type AppStackParamList = {
-  DriverDashboard: undefined;
-  ParentDashboard: undefined;
-  SchoolDashboard: undefined;
-  RTODashboard: undefined;
+  Tabs: undefined;
+  TripSummary: { trip: Trip };
+  TripDetail: { trip: Trip };
+  ReportComplaint: undefined;
+};
+
+export type DriverTabParamList = {
+  DriverHome: undefined;
+  TripHistory: undefined;
+  Profile: undefined;
+};
+
+export type ParentTabParamList = {
+  ParentHome: undefined;
+  Alerts: undefined;
+  Profile: undefined;
+};
+
+export type SchoolTabParamList = {
+  SchoolHome: undefined;
+  Complaints: undefined;
+  Rankings: undefined;
+  Profile: undefined;
+};
+
+export type RtoTabParamList = {
+  RtoHome: undefined;
+  Violations: undefined;
+  Profile: undefined;
 };
