@@ -1,20 +1,19 @@
-const { askGeminiJson } = require('./gemini');
-const fallback = require('./aiFallback');
+import { askGeminiJson } from './gemini.js';
+import * as fallback from './aiFallback.js';
 
 const wrap = (handler) => async (req, res) => {
   try {
     await handler(req, res);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: error.message || 'Internal server error' });
+    res.status(500).json({ message: error.message ?? 'Internal server error' });
   }
 };
 
-function registerRoutes(app, store) {
+export function registerRoutes(app, store) {
   // ── Trips ────────────────────────────────────────────────────────────
   app.post('/api/trips', wrap(async (req, res) => {
-    const trip = await store.saveTrip(req.body);
-    res.status(201).json(trip);
+    res.status(201).json(await store.saveTrip(req.body));
   }));
 
   app.get('/api/trips', wrap(async (req, res) => {
@@ -45,6 +44,20 @@ function registerRoutes(app, store) {
     res.status(201).json(complaint);
   }));
 
+  app.patch('/api/complaints/:id', wrap(async (req, res) => {
+    const { status } = req.body;
+    if (!['open', 'reviewing', 'resolved'].includes(status)) {
+      res.status(400).json({ message: 'status must be open, reviewing or resolved' });
+      return;
+    }
+    const updated = await store.updateComplaintStatus(req.params.id, status);
+    if (!updated) {
+      res.status(404).json({ message: 'Complaint not found' });
+      return;
+    }
+    res.json(updated);
+  }));
+
   // ── AI Safety Copilot (Gemini with deterministic fallback) ──────────
   app.post('/api/ai/safety-report', wrap(async (req, res) => {
     const trip = req.body;
@@ -52,7 +65,7 @@ function registerRoutes(app, store) {
       'You are an AI Safety Copilot for school bus transport. From this trip telemetry produce: {"score":number 0-100,"grade":"A"|"B"|"C"|"D","headline":string,"strengths":string[],"risks":string[],"recommendations":string[]}. Be concise and professional.',
       trip
     );
-    res.json(ai || fallback.safetyReport(trip));
+    res.json(ai ?? fallback.safetyReport(trip));
   }));
 
   app.post('/api/ai/trip-summary', wrap(async (req, res) => {
@@ -61,7 +74,7 @@ function registerRoutes(app, store) {
       'You are an AI Safety Copilot. Summarize this school bus trip for a parent/school: {"headline":string,"summary":string(2-3 sentences),"riskLevel":"low"|"medium"|"high","highlights":string[]}.',
       trip
     );
-    res.json(ai || fallback.tripSummary(trip));
+    res.json(ai ?? fallback.tripSummary(trip));
   }));
 
   app.post('/api/ai/complaint', wrap(async (req, res) => {
@@ -70,7 +83,7 @@ function registerRoutes(app, store) {
       'Categorize this parent complaint about a school bus: {"category":"Rash Driving"|"Overspeeding"|"Route Issue"|"Delay"|"Vehicle Condition"|"Behaviour"|"Other","severity":"low"|"medium"|"high","summary":string,"suggestedAction":string}.',
       { text }
     );
-    res.json(ai || fallback.complaintAnalysis(text));
+    res.json(ai ?? fallback.complaintAnalysis(text));
   }));
 
   app.get('/api/ai/weekly-insights', wrap(async (_req, res) => {
@@ -79,8 +92,6 @@ function registerRoutes(app, store) {
       'You are an AI Safety Copilot. From these fleet analytics produce exactly 3 weekly insights as {"insights":[{"title":string,"detail":string,"trend":"up"|"down"|"flat"}]}.',
       { analytics, violations: store.getViolations(), rankings: store.getRankings() }
     );
-    res.json(ai?.insights || fallback.weeklyInsights());
+    res.json(ai?.insights ?? fallback.weeklyInsights());
   }));
 }
-
-module.exports = { registerRoutes };

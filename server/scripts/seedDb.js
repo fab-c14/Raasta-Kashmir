@@ -4,18 +4,29 @@
 //
 // Run from server/:  npm run seed
 
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+import path from 'path';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import * as seed from '../src/seed.js';
 
-const mongoose = require('mongoose');
-const seed = require('../src/seed');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const DAY = 86400000;
 const ROUTE_NAME = 'Lal Chowk → Kashmir Valley School';
 
-const tripSchema = new mongoose.Schema({}, { strict: false, collection: 'trips' });
-const complaintSchema = new mongoose.Schema({}, { strict: false, collection: 'complaints' });
+const tripSchema = new mongoose.Schema(
+  { id: String },
+  { strict: false, collection: 'trips', id: false }
+);
+const complaintSchema = new mongoose.Schema(
+  { id: String },
+  { strict: false, collection: 'complaints', id: false }
+);
 
 const id = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 

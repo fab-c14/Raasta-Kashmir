@@ -71,27 +71,28 @@ export const roundness = {
   full: 9999,
 };
 
-// Warm, low shadows — paper casts soft shadows, not glassy ones.
+// Minimal, near-flat elevation: hairline borders do the separating work,
+// shadows only whisper.
 export const shadows = {
   sm: {
     shadowColor: '#3D3426',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.03,
+    shadowRadius: 1,
+    elevation: 0,
   },
   md: {
     shadowColor: '#3D3426',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07,
-    shadowRadius: 7,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   lg: {
     shadowColor: '#3D3426',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
 };

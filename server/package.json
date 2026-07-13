@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Raasta Kashmir backend — Express + Socket.IO + MongoDB + Gemini AI Safety Copilot",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",

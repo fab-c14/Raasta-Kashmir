@@ -119,6 +119,19 @@ export const tripService = {
     );
   },
 
+  async updateComplaintStatus(id: string, status: Complaint['status']): Promise<void> {
+    await liveOrDemo(
+      async () => {
+        await apiClient.patch(`/api/complaints/${id}`, { status });
+      },
+      async () => {
+        const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
+        const updated = stored.map((item) => (item.id === id ? { ...item, status } : item));
+        await AsyncStorage.setItem(COMPLAINTS_KEY, JSON.stringify(updated));
+      }
+    );
+  },
+
   async getCompliance(): Promise<ComplianceRecord[]> {
     return liveOrDemo(
       async () => (await apiClient.get<ComplianceRecord[]>('/api/compliance')).data,

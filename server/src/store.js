@@ -1,14 +1,22 @@
-const mongoose = require('mongoose');
-const seed = require('./seed');
+import mongoose from 'mongoose';
+import * as seed from './seed.js';
 
-const tripSchema = new mongoose.Schema({}, { strict: false, collection: 'trips' });
-const complaintSchema = new mongoose.Schema({}, { strict: false, collection: 'complaints' });
+// `id` must be an explicit path: Mongoose's built-in `id` virtual otherwise
+// swallows the field on create and documents come back without it.
+const tripSchema = new mongoose.Schema(
+  { id: String },
+  { strict: false, collection: 'trips', id: false }
+);
+const complaintSchema = new mongoose.Schema(
+  { id: String },
+  { strict: false, collection: 'complaints', id: false }
+);
 
 /**
  * Data layer with two backends: MongoDB (when MONGODB_URI is set and
  * reachable) or an in-memory fallback so the server always boots.
  */
-async function connectStore(mongoUri) {
+export async function connectStore(mongoUri) {
   let usingMongo = false;
   let TripModel = null;
   let ComplaintModel = null;
@@ -66,6 +74,16 @@ async function connectStore(mongoUri) {
       return memory.complaints;
     },
 
+    async updateComplaintStatus(id, status) {
+      if (usingMongo) {
+        await ComplaintModel.updateOne({ id }, { $set: { status } });
+        return ComplaintModel.findOne({ id }).lean();
+      }
+      const complaint = memory.complaints.find((item) => item.id === id);
+      if (complaint) complaint.status = status;
+      return complaint ?? null;
+    },
+
     getFleet() {
       return seed.fleet.map((bus) => {
         const live = liveBuses.get(bus.busNo);
@@ -73,28 +91,22 @@ async function connectStore(mongoUri) {
       });
     },
 
-    getRankings() {
-      return seed.rankings;
-    },
-
-    getCompliance() {
-      return seed.compliance;
-    },
-
-    getViolations() {
-      return seed.violations;
-    },
+    getRankings: () => seed.rankings,
+    getCompliance: () => seed.compliance,
+    getViolations: () => seed.violations,
 
     async getAnalytics() {
       const trips = await this.getTrips();
-      const active = [...liveBuses.values()].filter((bus) => bus.status === 'active' || bus.status === 'sos');
+      const active = [...liveBuses.values()].filter(
+        (bus) => bus.status === 'active' || bus.status === 'sos'
+      );
       const weekAgo = Date.now() - 7 * 86400000;
       const violationsWeek = trips
         .filter((trip) => trip.startedAt > weekAgo)
         .reduce(
           (sum, trip) =>
             sum +
-            (trip.events || []).filter(
+            (trip.events ?? []).filter(
               (event) => !['trip_started', 'trip_ended'].includes(event.type)
             ).length,
           0
@@ -110,11 +122,9 @@ async function connectStore(mongoUri) {
           (seed.compliance.filter((record) => record.isCompliant).length / seed.compliance.length) * 100
         ),
         sosCountMonth: trips.filter((trip) =>
-          (trip.events || []).some((event) => event.type === 'sos')
+          (trip.events ?? []).some((event) => event.type === 'sos')
         ).length,
       };
     },
   };
 }
-
-module.exports = { connectStore };

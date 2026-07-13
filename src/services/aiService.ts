@@ -29,8 +29,12 @@ const countEvents = (events: TripEvent[], type: TripEvent['type']): number =>
 export const aiService = {
   async getSafetyReport(trip: Trip): Promise<SafetyReport> {
     if (isLiveBackend) {
-      const { data } = await apiClient.post<SafetyReport>('/api/ai/safety-report', trip);
-      return data;
+      try {
+        const { data } = await apiClient.post<SafetyReport>('/api/ai/safety-report', trip);
+        return data;
+      } catch {
+        // Backend unreachable — fall through to the on-device generator.
+      }
     }
     const overspeeds = countEvents(trip.events, 'overspeed');
     const stops = countEvents(trip.events, 'long_stop');
@@ -73,8 +77,12 @@ export const aiService = {
 
   async getTripSummary(trip: Trip): Promise<TripSummary> {
     if (isLiveBackend) {
-      const { data } = await apiClient.post<TripSummary>('/api/ai/trip-summary', trip);
-      return data;
+      try {
+        const { data } = await apiClient.post<TripSummary>('/api/ai/trip-summary', trip);
+        return data;
+      } catch {
+        // Backend unreachable — fall through to the on-device generator.
+      }
     }
     const duration = formatDuration((trip.endedAt ?? Date.now()) - trip.startedAt);
     const eventCount = trip.events.filter((e) => e.type !== 'trip_started' && e.type !== 'trip_ended').length;
@@ -93,8 +101,12 @@ export const aiService = {
 
   async analyzeComplaint(text: string): Promise<ComplaintAnalysis> {
     if (isLiveBackend) {
-      const { data } = await apiClient.post<ComplaintAnalysis>('/api/ai/complaint', { text });
-      return data;
+      try {
+        const { data } = await apiClient.post<ComplaintAnalysis>('/api/ai/complaint', { text });
+        return data;
+      } catch {
+        // Backend unreachable — fall through to the on-device generator.
+      }
     }
     const lower = text.toLowerCase();
     const match = (words: string[]): boolean => words.some((word) => lower.includes(word));
@@ -135,8 +147,12 @@ export const aiService = {
 
   async getWeeklyInsights(): Promise<WeeklyInsight[]> {
     if (isLiveBackend) {
-      const { data } = await apiClient.get<WeeklyInsight[]>('/api/ai/weekly-insights');
-      return data;
+      try {
+        const { data } = await apiClient.get<WeeklyInsight[]>('/api/ai/weekly-insights');
+        if (Array.isArray(data) && data.length > 0) return data;
+      } catch {
+        // Backend unreachable — fall through to the on-device generator.
+      }
     }
     return [
       { title: 'Fleet safety improved 4% this week', detail: 'Average safety score rose to 86 after targeted counselling of two drivers.', trend: 'up' },

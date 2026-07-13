@@ -5,7 +5,7 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
  * any failure (missing key, network, malformed output) so callers can fall
  * back to deterministic heuristics — the API never breaks the demo.
  */
-async function askGeminiJson(instruction, payload) {
+export async function askGeminiJson(instruction, payload) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
@@ -36,5 +36,3 @@ async function askGeminiJson(instruction, payload) {
     return null;
   }
 }
-
-module.exports = { askGeminiJson };

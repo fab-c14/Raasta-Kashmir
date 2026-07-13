@@ -1,6 +1,5 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
 
@@ -13,6 +12,10 @@ interface PrimaryButtonProps {
   style?: ViewStyle;
 }
 
+/**
+ * Flat, minimal button. The 'gradient' variant renders as solid brand green
+ * (kept as a name for backwards compatibility across screens).
+ */
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   label,
   onPress,
@@ -24,33 +27,9 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   const { colors, roundness } = useAppTheme();
   const inactive = disabled || loading;
 
-  const content = loading ? (
-    <ActivityIndicator color={variant === 'outline' ? colors.primary : '#FFFFFF'} />
-  ) : (
-    <Text
-      style={[
-        typography.buttonLarge,
-        { color: variant === 'outline' ? colors.primary : '#FFFFFF' },
-      ]}
-    >
-      {label}
-    </Text>
-  );
-
-  if (variant === 'gradient') {
-    return (
-      <TouchableOpacity onPress={onPress} disabled={inactive} activeOpacity={0.85} style={style}>
-        <LinearGradient
-          colors={[colors.gradientStart, colors.gradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.button, { borderRadius: roundness.xl, opacity: inactive ? 0.6 : 1 }]}
-        >
-          {content}
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  }
+  const backgroundColor =
+    variant === 'danger' ? colors.danger : variant === 'outline' ? 'transparent' : colors.primary;
+  const contentColor = variant === 'outline' ? colors.primary : '#FFFFFF';
 
   return (
     <TouchableOpacity
@@ -60,23 +39,27 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       style={[
         styles.button,
         {
-          borderRadius: roundness.xl,
+          borderRadius: roundness.lg,
           opacity: inactive ? 0.6 : 1,
-          backgroundColor: variant === 'danger' ? colors.danger : 'transparent',
-          borderWidth: variant === 'outline' ? 1.5 : 0,
+          backgroundColor,
+          borderWidth: variant === 'outline' ? 1.2 : 0,
           borderColor: colors.primary,
         },
         style,
       ]}
     >
-      {content}
+      {loading ? (
+        <ActivityIndicator color={contentColor} />
+      ) : (
+        <Text style={[typography.buttonLarge, { color: contentColor }]}>{label}</Text>
+      )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
-    height: 54,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,

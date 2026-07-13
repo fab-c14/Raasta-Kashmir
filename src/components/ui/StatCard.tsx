@@ -18,9 +18,7 @@ export const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, ti
 
   return (
     <AppCard style={styles.card}>
-      <View style={[styles.iconWrap, { backgroundColor: `${iconColor}1A` }]}>
-        <Icon size={18} color={iconColor} strokeWidth={2} />
-      </View>
+      <Icon size={18} color={iconColor} strokeWidth={1.8} />
       <Text
         style={[typography.h3, { color: colors.textPrimary, marginTop: 10 }]}
         numberOfLines={1}
@@ -41,11 +39,4 @@ export const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, ti
 
 const styles = StyleSheet.create({
   card: { flex: 1 },
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
