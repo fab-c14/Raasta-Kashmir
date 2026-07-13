@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react-native';
 import { BrandMark } from '../components/BrandMark';
+import { isMockFirebase } from '../config/firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/types';
 
@@ -184,12 +185,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Quick Access Credentials Banner */}
-          <View style={[styles.quickAccessCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.quickAccessTitle, { color: colors.textPrimary }]}>Quick Demo logins (pwd: password123):</Text>
-            <Text style={[styles.quickAccessCreds, { color: colors.textSecondary }]}>• driver@raasta.com  • parent@raasta.com</Text>
-            <Text style={[styles.quickAccessCreds, { color: colors.textSecondary }]}>• school@raasta.com  • rto@raasta.com</Text>
-          </View>
+          {/* Demo credentials only exist in mock-auth mode; with real
+              Firebase they would mislead, so the banner hides itself. */}
+          {isMockFirebase ? (
+            <View style={[styles.quickAccessCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.quickAccessTitle, { color: colors.textPrimary }]}>Quick Demo logins (pwd: password123):</Text>
+              <Text style={[styles.quickAccessCreds, { color: colors.textSecondary }]}>• driver@raasta.com  • parent@raasta.com</Text>
+              <Text style={[styles.quickAccessCreds, { color: colors.textSecondary }]}>• school@raasta.com  • rto@raasta.com</Text>
+            </View>
+          ) : null}
 
         </ScrollView>
       </KeyboardAvoidingView>

@@ -20,6 +20,25 @@ export function registerRoutes(app, store) {
     res.json(await store.getTrips(req.query.busNo));
   }));
 
+  // ── User profiles (role persistence for Firebase auth) ──────────────
+  app.post('/api/users', wrap(async (req, res) => {
+    const profile = req.body;
+    if (!profile?.uid || !profile?.role) {
+      res.status(400).json({ message: 'uid and role are required' });
+      return;
+    }
+    res.status(201).json(await store.saveUser(profile));
+  }));
+
+  app.get('/api/users/:uid', wrap(async (req, res) => {
+    const user = await store.getUser(req.params.uid);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    res.json(user);
+  }));
+
   // ── Fleet / dashboards ───────────────────────────────────────────────
   app.get('/api/fleet', wrap(async (_req, res) => res.json(store.getFleet())));
   app.get('/api/rankings', wrap(async (_req, res) => res.json(store.getRankings())));

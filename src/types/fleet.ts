@@ -35,9 +35,8 @@ export interface Complaint {
 export interface ComplianceRecord {
   busNo: string;
   schoolName: string;
-  fitnessValidTill: string;
+  routeName: string;
   insuranceValidTill: string;
-  permitValidTill: string;
   lastInspection: string;
   isCompliant: boolean;
 }

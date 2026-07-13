@@ -1,16 +1,55 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  sendPasswordResetEmail 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  updateProfile,
 } from 'firebase/auth';
 import { auth, isMockFirebase } from '../config/firebase';
+import { apiClient } from '../api/client';
+import { isLiveBackend } from '../config/env';
 import { UserProfile, UserRole } from '../types/auth';
 
 const STORAGE_KEYS = {
   CURRENT_USER: '@raasta_current_user',
   MOCK_USERS: '@raasta_mock_users',
+  PROFILES_BY_UID: '@raasta_profiles_by_uid',
+};
+
+/**
+ * Firebase Auth only stores email/password — the Raasta profile (role, bus,
+ * school…) lives in our backend (MongoDB), with a local cache so login keeps
+ * the right role even if the server is unreachable.
+ */
+const profileStore = {
+  async save(profile: UserProfile): Promise<void> {
+    if (isLiveBackend) {
+      try {
+        await apiClient.post('/api/users', profile);
+      } catch {
+        // Cached below; synced next time the backend is reachable.
+      }
+    }
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.PROFILES_BY_UID);
+    const map: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
+    map[profile.uid] = profile;
+    await AsyncStorage.setItem(STORAGE_KEYS.PROFILES_BY_UID, JSON.stringify(map));
+  },
+
+  async load(uid: string): Promise<UserProfile | null> {
+    if (isLiveBackend) {
+      try {
+        const { data } = await apiClient.get<UserProfile>(`/api/users/${uid}`);
+        if (data?.role) return data;
+      } catch {
+        // Fall through to the local cache.
+      }
+    }
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.PROFILES_BY_UID);
+    const map: Record<string, UserProfile> = raw ? JSON.parse(raw) : {};
+    return map[uid] ?? null;
+  },
 };
 
 // Helper for generating simulated latency
@@ -85,13 +124,12 @@ export const authService = {
       return foundUser;
     } else {
       const userCredential = await signInWithEmailAndPassword(auth, formattedEmail, password);
-      // In production, you would fetch additional user profile metadata from Firestore here.
-      // For Phase 1, we construct a profile from user details.
-      const profile: UserProfile = {
+      const stored = await profileStore.load(userCredential.user.uid);
+      const profile: UserProfile = stored ?? {
         uid: userCredential.user.uid,
         email: userCredential.user.email || formattedEmail,
         name: userCredential.user.displayName || email.split('@')[0],
-        role: 'driver', // Default to driver; Firestore integration will determine role in later phases
+        role: 'parent',
         createdAt: new Date().toISOString(),
       };
       await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(profile));
@@ -139,7 +177,8 @@ export const authService = {
       return newProfile;
     } else {
       const userCredential = await createUserWithEmailAndPassword(auth, formattedEmail, password);
-      
+      await updateProfile(userCredential.user, { displayName: name }).catch(() => undefined);
+
       const newProfile: UserProfile = {
         uid: userCredential.user.uid,
         email: formattedEmail,
@@ -149,8 +188,8 @@ export const authService = {
         createdAt: new Date().toISOString(),
         ...extraDetails
       };
-      
-      // In production, profile would be saved to Firestore here.
+
+      await profileStore.save(newProfile);
       await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newProfile));
       return newProfile;
     }

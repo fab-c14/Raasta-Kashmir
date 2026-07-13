@@ -95,7 +95,10 @@ export const tripService = {
     };
     return liveOrDemo(async () => {
       const { data } = await apiClient.get<Complaint[]>('/api/complaints');
-      return data.length > 0 ? data : demo();
+      if (data.length === 0) return demo();
+      // Older documents may lack an id; assign one locally so list keys and
+      // status updates always target exactly one complaint.
+      return data.map((item) => (item.id ? item : { ...item, id: createId('cmp') }));
     }, demo);
   },
 

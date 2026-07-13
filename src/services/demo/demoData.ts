@@ -62,11 +62,11 @@ export const demoComplaints: Complaint[] = [
 ];
 
 export const demoCompliance: ComplianceRecord[] = [
-  { busNo: DEMO_BUS_NO, schoolName: 'Kashmir Valley School', fitnessValidTill: '12 Mar 2027', insuranceValidTill: '30 Nov 2026', permitValidTill: '18 Aug 2027', lastInspection: '02 Jun 2026', isCompliant: true },
-  { busNo: 'JK-01-B-4472', schoolName: 'Kashmir Valley School', fitnessValidTill: '08 Jan 2027', insuranceValidTill: '15 Oct 2026', permitValidTill: '22 May 2027', lastInspection: '14 May 2026', isCompliant: true },
-  { busNo: 'JK-01-C-8810', schoolName: 'Kashmir Valley School', fitnessValidTill: '25 Feb 2027', insuranceValidTill: '09 Dec 2026', permitValidTill: '30 Jul 2027', lastInspection: '21 Jun 2026', isCompliant: true },
-  { busNo: 'JK-01-D-2296', schoolName: 'Kashmir Valley School', fitnessValidTill: '11 Jun 2026', insuranceValidTill: '28 Feb 2027', permitValidTill: '14 Sep 2026', lastInspection: '03 Feb 2026', isCompliant: false },
-  { busNo: 'JK-01-E-6634', schoolName: 'Green Meadows School', fitnessValidTill: '19 Apr 2027', insuranceValidTill: '07 Jan 2027', permitValidTill: '25 Oct 2026', lastInspection: '11 Apr 2026', isCompliant: true },
+  { busNo: DEMO_BUS_NO, schoolName: 'Kashmir Valley School', routeName: DEMO_ROUTE_NAME, insuranceValidTill: '30 Nov 2026', lastInspection: '02 Jun 2026', isCompliant: true },
+  { busNo: 'JK-01-B-4472', schoolName: 'Kashmir Valley School', routeName: 'Rajbagh → Kashmir Valley School', insuranceValidTill: '15 Oct 2026', lastInspection: '14 May 2026', isCompliant: true },
+  { busNo: 'JK-01-C-8810', schoolName: 'Kashmir Valley School', routeName: 'Bemina → Kashmir Valley School', insuranceValidTill: '09 Dec 2026', lastInspection: '21 Jun 2026', isCompliant: true },
+  { busNo: 'JK-01-D-2296', schoolName: 'Kashmir Valley School', routeName: 'Soura → Kashmir Valley School', insuranceValidTill: '28 Feb 2027', lastInspection: '03 Feb 2026', isCompliant: false },
+  { busNo: 'JK-01-E-6634', schoolName: 'Green Meadows School', routeName: 'HMT → Green Meadows School', insuranceValidTill: '07 Jan 2027', lastInspection: '11 Apr 2026', isCompliant: true },
 ];
 
 export const demoViolations: ViolationRecord[] = [
@@ -75,7 +75,7 @@ export const demoViolations: ViolationRecord[] = [
   { id: createId('vio'), busNo: 'JK-01-D-2296', driverName: 'Farooq Lone', type: 'Route Deviation', detail: '600 m off route near Anchar', date: '11 Jul 2026', severity: 'high' },
   { id: createId('vio'), busNo: 'JK-01-B-4472', driverName: 'Bashir Ahmad', type: 'Long Stop', detail: 'Unscheduled 9 minute stop at Dalgate', date: '10 Jul 2026', severity: 'low' },
   { id: createId('vio'), busNo: 'JK-01-E-6634', driverName: 'Abdul Majid', type: 'Overspeeding', detail: '55 km/h near HMT crossing', date: '09 Jul 2026', severity: 'low' },
-  { id: createId('vio'), busNo: 'JK-01-D-2296', driverName: 'Farooq Lone', type: 'Expired Fitness', detail: 'Fitness certificate expired on 11 Jun 2026', date: '08 Jul 2026', severity: 'high' },
+  { id: createId('vio'), busNo: 'JK-01-D-2296', driverName: 'Farooq Lone', type: 'Overdue Inspection', detail: 'Last inspected 03 Feb 2026 — past the 6-month limit', date: '08 Jul 2026', severity: 'high' },
 ];
 
 export const demoAnalytics: AnalyticsSummary = {

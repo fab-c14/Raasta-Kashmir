@@ -80,8 +80,10 @@ async function main() {
   const Trip = mongoose.model('Trip', tripSchema);
   const Complaint = mongoose.model('Complaint', complaintSchema);
 
-  await Trip.deleteMany({ seeded: true });
-  await Complaint.deleteMany({ seeded: true });
+  // Remove seeded docs and any legacy documents saved without an id
+  // (created before the schema declared `id` explicitly).
+  await Trip.deleteMany({ $or: [{ seeded: true }, { id: { $exists: false } }] });
+  await Complaint.deleteMany({ $or: [{ seeded: true }, { id: { $exists: false } }] });
   const trips = await Trip.insertMany(buildTrips());
   const complaints = await Complaint.insertMany(buildComplaints());
 

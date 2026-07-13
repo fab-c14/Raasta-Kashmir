@@ -11,6 +11,10 @@ const complaintSchema = new mongoose.Schema(
   { id: String },
   { strict: false, collection: 'complaints', id: false }
 );
+const userSchema = new mongoose.Schema(
+  { uid: String, email: String },
+  { strict: false, collection: 'users', id: false }
+);
 
 /**
  * Data layer with two backends: MongoDB (when MONGODB_URI is set and
@@ -20,19 +24,21 @@ export async function connectStore(mongoUri) {
   let usingMongo = false;
   let TripModel = null;
   let ComplaintModel = null;
+  let UserModel = null;
 
   if (mongoUri) {
     try {
       await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 6000 });
       TripModel = mongoose.model('Trip', tripSchema);
       ComplaintModel = mongoose.model('Complaint', complaintSchema);
+      UserModel = mongoose.model('User', userSchema);
       usingMongo = true;
     } catch (error) {
       console.warn('MongoDB unreachable, falling back to in-memory store:', error.message);
     }
   }
 
-  const memory = { trips: [], complaints: [] };
+  const memory = { trips: [], complaints: [], users: [] };
   // Live bus state kept in memory in both modes (ephemeral realtime data).
   const liveBuses = new Map();
 
@@ -72,6 +78,24 @@ export async function connectStore(mongoUri) {
         return ComplaintModel.find({}).sort({ createdAt: -1 }).limit(100).lean();
       }
       return memory.complaints;
+    },
+
+    /** Upsert a user profile (register / profile update). */
+    async saveUser(profile) {
+      if (usingMongo) {
+        await UserModel.updateOne({ uid: profile.uid }, { $set: profile }, { upsert: true });
+        return profile;
+      }
+      memory.users = memory.users.filter((user) => user.uid !== profile.uid);
+      memory.users.push(profile);
+      return profile;
+    },
+
+    async getUser(uid) {
+      if (usingMongo) {
+        return UserModel.findOne({ uid }).lean();
+      }
+      return memory.users.find((user) => user.uid === uid) ?? null;
     },
 
     async updateComplaintStatus(id, status) {
