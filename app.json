@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "EmlyOpenHack",
+    "name": "Raasta Kashmir",
     "slug": "EmlyOpenHack",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,7 +23,17 @@
     },
     "plugins": [
       "expo-font",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "backgroundColor": "#16A34A",
+          "dark": {
+            "backgroundColor": "#0F172A"
+          }
+        }
+      ],
       "expo-location"
     ]
   }
