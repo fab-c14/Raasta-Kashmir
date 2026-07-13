@@ -25,7 +25,7 @@ interface Props {
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { login, error, clearError } = useAuth();
-  const { colors, spacing, roundness, shadows, isDark } = useAppTheme();
+  const { colors, shadows, isDark } = useAppTheme();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

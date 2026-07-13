@@ -78,12 +78,22 @@ class BusSimulator {
     return () => {
       this.stateListeners.delete(onState);
       if (onEvent) this.eventListeners.delete(onEvent);
+      this.stopIfIdle();
     };
   }
 
   private ensureRunning(): void {
     if (this.timer) return;
     this.timer = setInterval(() => this.step(), TICK_MS);
+  }
+
+  /** Pause the interval when no screen is watching; resumes on subscribe. */
+  private stopIfIdle(): void {
+    if (this.stateListeners.size > 0 || this.eventListeners.size > 0) return;
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
   }
 
   /** Scripted speed profile: cruising, one overspeed burst, one long stop. */

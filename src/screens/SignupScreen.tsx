@@ -13,7 +13,7 @@ import {
 import { TextInput, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../hooks/useAppTheme';
-import { Mail, Lock, User, Phone, ShieldCheck, AlertCircle } from 'lucide-react-native';
+import { Mail, Lock, User, Phone, AlertCircle } from 'lucide-react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/types';
 import { UserRole } from '../types/auth';
@@ -26,7 +26,7 @@ interface Props {
 
 const SignupScreen: React.FC<Props> = ({ navigation }) => {
   const { register, error, clearError } = useAuth();
-  const { colors, spacing, roundness, shadows, isDark } = useAppTheme();
+  const { colors, shadows, isDark } = useAppTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
