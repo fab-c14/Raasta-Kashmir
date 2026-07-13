@@ -49,12 +49,16 @@ const ParentHomeScreen: React.FC = () => {
               <View style={styles.etaRow}>
                 <View style={styles.etaText}>
                   <Text style={[typography.bodySmall, { color: colors.textSecondary }]} numberOfLines={1}>
-                    Arriving at {bus.nextStop}
+                    {bus.etaMinutes > 0 ? `Arriving at ${bus.nextStop}` : 'Live tracking'}
                   </Text>
-                  <Text style={[typography.h1, { color: colors.textPrimary }]}>
-                    {bus.etaMinutes}
-                    <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}> min</Text>
-                  </Text>
+                  {bus.etaMinutes > 0 ? (
+                    <Text style={[typography.h1, { color: colors.textPrimary }]}>
+                      {bus.etaMinutes}
+                      <Text style={[typography.bodyMedium, { color: colors.textSecondary }]}> min</Text>
+                    </Text>
+                  ) : (
+                    <Text style={[typography.h2, { color: colors.textPrimary }]}>{bus.nextStop}</Text>
+                  )}
                 </View>
                 <Badge label={statusLabel} tone={statusTone} />
               </View>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import MapView, { Circle, Marker, Polyline } from 'react-native-maps';
+import MapView, { Circle, Details, Marker, Polyline, Region } from 'react-native-maps';
 import { Bus } from 'lucide-react-native';
 import { LatLng } from '../types/trip';
 import { DEMO_REGION, DEMO_ROUTE_PATH, DEMO_STOPS } from '../constants/demoRoute';
@@ -13,6 +13,9 @@ interface LiveMapProps {
   followBus?: boolean;
 }
 
+/** How long the camera leaves the map alone after the user pans or zooms. */
+const GESTURE_GRACE_MS = 12_000;
+
 /** Shared map: planned route, stops, and the live bus marker. */
 export const LiveMap: React.FC<LiveMapProps> = ({
   busLocation,
@@ -22,15 +25,25 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 }) => {
   const { colors, roundness, isDark } = useAppTheme();
   const mapRef = useRef<MapView | null>(null);
+  const lastGestureAt = useRef(0);
+  const hasCentered = useRef(false);
 
   useEffect(() => {
-    if (busLocation && followBus) {
-      mapRef.current?.animateCamera(
-        { center: busLocation, zoom: 14 },
-        { duration: 900 }
-      );
+    if (!busLocation || !followBus) return;
+    // Respect the user's gestures: pause auto-follow after a pan/zoom, and
+    // never override their zoom level — only recenter.
+    if (Date.now() - lastGestureAt.current < GESTURE_GRACE_MS) return;
+    if (!hasCentered.current) {
+      hasCentered.current = true;
+      mapRef.current?.animateCamera({ center: busLocation, zoom: 14 }, { duration: 800 });
+    } else {
+      mapRef.current?.animateCamera({ center: busLocation }, { duration: 900 });
     }
   }, [busLocation, followBus]);
+
+  const handleRegionChange = (_region: Region, details: Details): void => {
+    if (details.isGesture) lastGestureAt.current = Date.now();
+  };
 
   return (
     <View style={[styles.wrap, { height, borderRadius: roundness.lg, borderColor: colors.border }]}>
@@ -38,6 +51,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={DEMO_REGION}
+        onRegionChangeComplete={handleRegionChange}
         showsCompass={false}
         toolbarEnabled={false}
         userInterfaceStyle={isDark ? 'dark' : 'light'}

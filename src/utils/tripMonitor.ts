@@ -94,9 +94,11 @@ export class TripMonitor {
     const offRouteBy = distanceToPathMeters(point, this.plannedRoute);
     if (offRouteBy <= ROUTE_DEVIATION_THRESHOLD_M) return null;
     if (this.isOnCooldown('route_deviation', point.timestamp)) return null;
+    const distanceLabel =
+      offRouteBy >= 1000 ? `${(offRouteBy / 1000).toFixed(1)} km` : `${Math.round(offRouteBy)} m`;
     return this.buildEvent(
       'route_deviation',
-      `Bus is ${Math.round(offRouteBy)} m off the planned route`,
+      `Bus is ${distanceLabel} off the planned route`,
       point
     );
   }

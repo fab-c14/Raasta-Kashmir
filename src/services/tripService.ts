@@ -33,60 +33,73 @@ const readJson = async <T>(key: string, fallback: T): Promise<T> => {
   }
 };
 
+/**
+ * Try the live backend first; if it is unreachable (wrong IP, server down,
+ * phone off Wi-Fi) fall back to demo data so no screen is ever stuck on a
+ * skeleton. Demo mode skips the network entirely.
+ */
+const liveOrDemo = async <T>(live: () => Promise<T>, demo: () => Promise<T>): Promise<T> => {
+  if (!isLiveBackend) return demo();
+  try {
+    return await live();
+  } catch {
+    return demo();
+  }
+};
+
+const saveLocalTrip = async (trip: Trip): Promise<void> => {
+  const stored = await readJson<Trip[]>(HISTORY_KEY, []);
+  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify([trip, ...stored].slice(0, 50)));
+};
+
 export const tripService = {
-  /** Persist a finished trip (backend when live, AsyncStorage in demo). */
+  /** Persist a finished trip (backend when live, AsyncStorage as fallback). */
   async saveTrip(trip: Trip): Promise<void> {
-    if (isLiveBackend) {
-      await apiClient.post('/api/trips', trip);
-      return;
-    }
-    const stored = await readJson<Trip[]>(HISTORY_KEY, []);
-    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify([trip, ...stored].slice(0, 50)));
+    await liveOrDemo(
+      async () => {
+        await apiClient.post('/api/trips', trip);
+      },
+      () => saveLocalTrip(trip)
+    );
   },
 
   async getTripHistory(driverId: string, driverName: string, busNo: string): Promise<Trip[]> {
-    if (isLiveBackend) {
+    const demo = async (): Promise<Trip[]> => {
+      const stored = await readJson<Trip[]>(HISTORY_KEY, []);
+      return [...stored, ...buildDemoHistory(driverId, driverName, busNo)];
+    };
+    return liveOrDemo(async () => {
       const { data } = await apiClient.get<Trip[]>('/api/trips', { params: { busNo } });
-      return data;
-    }
-    const stored = await readJson<Trip[]>(HISTORY_KEY, []);
-    return [...stored, ...buildDemoHistory(driverId, driverName, busNo)];
+      return data.length > 0 ? data : demo();
+    }, demo);
   },
 
   async getFleet(): Promise<FleetBus[]> {
-    if (isLiveBackend) {
-      const { data } = await apiClient.get<FleetBus[]>('/api/fleet');
-      return data;
-    }
-    return demoFleet;
+    return liveOrDemo(
+      async () => (await apiClient.get<FleetBus[]>('/api/fleet')).data,
+      async () => demoFleet
+    );
   },
 
   async getRankings(): Promise<DriverRanking[]> {
-    if (isLiveBackend) {
-      const { data } = await apiClient.get<DriverRanking[]>('/api/rankings');
-      return data;
-    }
-    return demoRankings;
+    return liveOrDemo(
+      async () => (await apiClient.get<DriverRanking[]>('/api/rankings')).data,
+      async () => demoRankings
+    );
   },
 
   async getComplaints(): Promise<Complaint[]> {
-    if (isLiveBackend) {
+    const demo = async (): Promise<Complaint[]> => {
+      const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
+      return [...stored, ...demoComplaints];
+    };
+    return liveOrDemo(async () => {
       const { data } = await apiClient.get<Complaint[]>('/api/complaints');
-      return data;
-    }
-    const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
-    return [...stored, ...demoComplaints];
+      return data.length > 0 ? data : demo();
+    }, demo);
   },
 
   async submitComplaint(busNo: string, parentName: string, text: string): Promise<Complaint> {
-    if (isLiveBackend) {
-      const { data } = await apiClient.post<Complaint>('/api/complaints', {
-        busNo,
-        parentName,
-        text,
-      });
-      return data;
-    }
     const complaint: Complaint = {
       id: createId('cmp'),
       busNo,
@@ -95,32 +108,35 @@ export const tripService = {
       createdAt: Date.now(),
       status: 'open',
     };
-    const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
-    await AsyncStorage.setItem(COMPLAINTS_KEY, JSON.stringify([complaint, ...stored]));
-    return complaint;
+    return liveOrDemo(
+      async () =>
+        (await apiClient.post<Complaint>('/api/complaints', { busNo, parentName, text })).data,
+      async () => {
+        const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
+        await AsyncStorage.setItem(COMPLAINTS_KEY, JSON.stringify([complaint, ...stored]));
+        return complaint;
+      }
+    );
   },
 
   async getCompliance(): Promise<ComplianceRecord[]> {
-    if (isLiveBackend) {
-      const { data } = await apiClient.get<ComplianceRecord[]>('/api/compliance');
-      return data;
-    }
-    return demoCompliance;
+    return liveOrDemo(
+      async () => (await apiClient.get<ComplianceRecord[]>('/api/compliance')).data,
+      async () => demoCompliance
+    );
   },
 
   async getViolations(): Promise<ViolationRecord[]> {
-    if (isLiveBackend) {
-      const { data } = await apiClient.get<ViolationRecord[]>('/api/violations');
-      return data;
-    }
-    return demoViolations;
+    return liveOrDemo(
+      async () => (await apiClient.get<ViolationRecord[]>('/api/violations')).data,
+      async () => demoViolations
+    );
   },
 
   async getAnalytics(): Promise<AnalyticsSummary> {
-    if (isLiveBackend) {
-      const { data } = await apiClient.get<AnalyticsSummary>('/api/analytics');
-      return data;
-    }
-    return demoAnalytics;
+    return liveOrDemo(
+      async () => (await apiClient.get<AnalyticsSummary>('/api/analytics')).data,
+      async () => demoAnalytics
+    );
   },
 };

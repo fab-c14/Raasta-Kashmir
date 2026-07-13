@@ -3,7 +3,12 @@ import { Trip, TripEvent, TripPoint } from '../types/trip';
 import { UserProfile } from '../types/auth';
 import { DEMO_ROUTE_NAME, DEMO_ROUTE_PATH, DEMO_STOPS } from '../constants/demoRoute';
 import { TripMonitor, computeSafetyScore } from '../utils/tripMonitor';
-import { bearingDegrees, distanceMeters, remainingPathMeters } from '../utils/geo';
+import {
+  bearingDegrees,
+  distanceMeters,
+  distanceToPathMeters,
+  remainingPathMeters,
+} from '../utils/geo';
 import { createId } from '../utils/id';
 import { locationService } from '../services/locationService';
 import { startDriveSimulation } from '../services/demo/driveSimulator';
@@ -31,6 +36,7 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const tripRef = useRef<Trip | null>(null);
   const monitorRef = useRef<TripMonitor | null>(null);
+  const offDemoRouteRef = useRef(false);
   const stopWatchingRef = useRef<(() => void) | null>(null);
 
   useEffect(() => () => stopWatchingRef.current?.(), []);
@@ -51,6 +57,15 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const current = tripRef.current;
       if (!current || current.status !== 'active') return;
 
+      // Assign the planned route on the first fix. When the driver is
+      // testing far from the Srinagar demo route, route-deviation checks
+      // are disabled — comparing real GPS to a route the bus was never on
+      // would flag nonsense deviations.
+      if (!monitorRef.current) {
+        offDemoRouteRef.current = distanceToPathMeters(point, DEMO_ROUTE_PATH) > 2000;
+        monitorRef.current = new TripMonitor(offDemoRouteRef.current ? [] : DEMO_ROUTE_PATH);
+      }
+
       const previous = current.path[current.path.length - 1];
       const addedKm = previous ? distanceMeters(previous, point) / 1000 : 0;
       const updated: Trip = {
@@ -69,6 +84,7 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const remainingM = remainingPathMeters(point, DEMO_ROUTE_PATH);
       const etaSpeed = Math.max(point.speedKmh, ETA_FALLBACK_SPEED_KMH);
+      const offRoute = offDemoRouteRef.current;
       realtimeService.publishDriverState({
         busNo: updated.busNo,
         tripId: updated.id,
@@ -77,10 +93,13 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
         location: { latitude: point.latitude, longitude: point.longitude },
         heading: previous ? bearingDegrees(previous, point) : 0,
         speedKmh: point.speedKmh,
-        etaMinutes: Math.max(1, Math.round(remainingM / 1000 / (etaSpeed / 60))),
-        nextStop:
-          DEMO_STOPS.find((stop) => distanceMeters(point, stop.location) < remainingM)?.name ??
-          DEMO_STOPS[DEMO_STOPS.length - 1].name,
+        etaMinutes: offRoute
+          ? 0
+          : Math.max(1, Math.min(999, Math.round(remainingM / 1000 / (etaSpeed / 60)))),
+        nextStop: offRoute
+          ? 'En route'
+          : DEMO_STOPS.find((stop) => distanceMeters(point, stop.location) < remainingM)?.name ??
+            DEMO_STOPS[DEMO_STOPS.length - 1].name,
         updatedAt: point.timestamp,
       });
     },
@@ -113,7 +132,8 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
         path: [],
       };
       tripRef.current = newTrip;
-      monitorRef.current = new TripMonitor(DEMO_ROUTE_PATH);
+      monitorRef.current = null; // created on the first GPS fix
+      offDemoRouteRef.current = false;
       setTrip(newTrip);
       setLiveScore(100);
 

@@ -10,6 +10,7 @@ const { Server } = require('socket.io');
 const { connectStore } = require('./src/store');
 const { registerRoutes } = require('./src/routes');
 const { registerSockets } = require('./src/sockets');
+const { startDemoBus } = require('./src/demoBus');
 
 const PORT = Number(process.env.PORT || 4000);
 
@@ -25,6 +26,7 @@ async function main() {
 
   registerRoutes(app, store);
   registerSockets(io, store);
+  startDemoBus(io, store);
 
   app.get('/health', (_req, res) =>
     res.json({

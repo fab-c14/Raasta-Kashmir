@@ -21,7 +21,12 @@ class RealtimeService {
     return this.socket;
   }
 
-  /** Watch a bus (parent/school/RTO side). Returns an unsubscribe fn. */
+  /**
+   * Watch a bus (parent/school/RTO side). Returns an unsubscribe fn.
+   * In live mode, if the server sends nothing within 8 s (server down,
+   * wrong IP), the watch falls back to the in-app simulator so tracking
+   * screens are never blank.
+   */
   subscribeToBus(
     busNo: string,
     onState: StateListener,
@@ -31,8 +36,17 @@ class RealtimeService {
       return busSimulator.subscribe(onState, onEvent);
     }
     const socket = this.ensureSocket();
+    let receivedLiveState = false;
+    let fallbackUnsubscribe: (() => void) | null = null;
+
     const stateHandler = (state: BusLiveState): void => {
-      if (state.busNo === busNo) onState(state);
+      if (state.busNo !== busNo) return;
+      receivedLiveState = true;
+      if (fallbackUnsubscribe) {
+        fallbackUnsubscribe();
+        fallbackUnsubscribe = null;
+      }
+      onState(state);
     };
     const eventHandler = (event: TripEvent & { busNo?: string }): void => {
       if (onEvent && (!event.busNo || event.busNo === busNo)) onEvent(event);
@@ -40,7 +54,16 @@ class RealtimeService {
     socket.emit('bus:watch', { busNo });
     socket.on('bus:state', stateHandler);
     socket.on('bus:event', eventHandler);
+
+    const fallbackTimer = setTimeout(() => {
+      if (!receivedLiveState) {
+        fallbackUnsubscribe = busSimulator.subscribe(onState, onEvent);
+      }
+    }, 8000);
+
     return () => {
+      clearTimeout(fallbackTimer);
+      fallbackUnsubscribe?.();
       socket.emit('bus:unwatch', { busNo });
       socket.off('bus:state', stateHandler);
       socket.off('bus:event', eventHandler);
