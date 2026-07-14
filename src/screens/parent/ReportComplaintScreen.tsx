@@ -79,7 +79,7 @@ const ReportComplaintScreen: React.FC = () => {
           {analysis ? (
             <AiInsightCard title="AI Triage">
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                <Badge label={analysis.category} tone="ai" />
+                <Badge label={analysis.category} tone="info" />
                 <Badge
                   label={`${analysis.severity.toUpperCase()} severity`}
                   tone={analysis.severity === 'high' ? 'danger' : analysis.severity === 'medium' ? 'warning' : 'success'}

@@ -46,6 +46,35 @@ export function registerRoutes(app, store) {
   app.get('/api/violations', wrap(async (_req, res) => res.json(store.getViolations())));
   app.get('/api/analytics', wrap(async (_req, res) => res.json(await store.getAnalytics())));
 
+  // ── Students (school assigns students to buses) ──────────────────────
+  app.get('/api/students', wrap(async (_req, res) => res.json(await store.getStudents())));
+
+  app.post('/api/students', wrap(async (req, res) => {
+    const { name, className, busNo, parentName } = req.body;
+    if (!name || !className || !busNo) {
+      res.status(400).json({ message: 'name, className and busNo are required' });
+      return;
+    }
+    const student = {
+      id: `stu_${Date.now().toString(36)}`,
+      name,
+      className,
+      busNo,
+      parentName: parentName ?? '',
+    };
+    await store.addStudent(student);
+    res.status(201).json(student);
+  }));
+
+  app.delete('/api/students/:id', wrap(async (req, res) => {
+    const removed = await store.removeStudent(req.params.id);
+    if (!removed) {
+      res.status(404).json({ message: 'Student not found' });
+      return;
+    }
+    res.json({ ok: true });
+  }));
+
   // ── Complaints ───────────────────────────────────────────────────────
   app.get('/api/complaints', wrap(async (_req, res) => res.json(await store.getComplaints())));
 
@@ -82,7 +111,8 @@ export function registerRoutes(app, store) {
     const trip = req.body;
     const ai = await askGeminiJson(
       'You are an AI Safety Copilot for school bus transport. From this trip telemetry produce: {"score":number 0-100,"grade":"A"|"B"|"C"|"D","headline":string,"strengths":string[],"risks":string[],"recommendations":string[]}. Be concise and professional.',
-      trip
+      trip,
+      trip.id ? 'safety:' + trip.id : null
     );
     res.json(ai ?? fallback.safetyReport(trip));
   }));
@@ -91,7 +121,8 @@ export function registerRoutes(app, store) {
     const trip = req.body;
     const ai = await askGeminiJson(
       'You are an AI Safety Copilot. Summarize this school bus trip for a parent/school: {"headline":string,"summary":string(2-3 sentences),"riskLevel":"low"|"medium"|"high","highlights":string[]}.',
-      trip
+      trip,
+      trip.id ? 'summary:' + trip.id : null
     );
     res.json(ai ?? fallback.tripSummary(trip));
   }));
@@ -100,7 +131,8 @@ export function registerRoutes(app, store) {
     const { text } = req.body;
     const ai = await askGeminiJson(
       'Categorize this parent complaint about a school bus: {"category":"Rash Driving"|"Overspeeding"|"Route Issue"|"Delay"|"Vehicle Condition"|"Behaviour"|"Other","severity":"low"|"medium"|"high","summary":string,"suggestedAction":string}.',
-      { text }
+      { text },
+      'complaint:' + String(text).slice(0, 80)
     );
     res.json(ai ?? fallback.complaintAnalysis(text));
   }));
@@ -109,7 +141,8 @@ export function registerRoutes(app, store) {
     const analytics = await store.getAnalytics();
     const ai = await askGeminiJson(
       'You are an AI Safety Copilot. From these fleet analytics produce exactly 3 weekly insights as {"insights":[{"title":string,"detail":string,"trend":"up"|"down"|"flat"}]}.',
-      { analytics, violations: store.getViolations(), rankings: store.getRankings() }
+      { analytics, violations: store.getViolations(), rankings: store.getRankings() },
+      'weekly-insights'
     );
     res.json(ai?.insights ?? fallback.weeklyInsights());
   }));

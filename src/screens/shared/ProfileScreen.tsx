@@ -65,9 +65,9 @@ const ProfileScreen: React.FC = () => {
         ))}
       </AppCard>
 
-      <AppCard accent="ai" style={{ marginTop: spacing.md }}>
+      <AppCard style={{ marginTop: spacing.md }}>
         <View style={styles.modeRow}>
-          <ShieldCheck size={16} color={colors.aiAccent} />
+          <ShieldCheck size={16} color={colors.primary} />
           <Text style={[typography.bodySmall, { color: colors.textSecondary, marginLeft: 8, flex: 1 }]}>
             {isLiveBackend
               ? 'Connected to live Raasta backend'

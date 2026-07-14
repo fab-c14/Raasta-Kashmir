@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema(
   { uid: String, email: String },
   { strict: false, collection: 'users', id: false }
 );
+const studentSchema = new mongoose.Schema(
+  { id: String, busNo: String },
+  { strict: false, collection: 'students', id: false }
+);
 
 /**
  * Data layer with two backends: MongoDB (when MONGODB_URI is set and
@@ -25,6 +29,7 @@ export async function connectStore(mongoUri) {
   let TripModel = null;
   let ComplaintModel = null;
   let UserModel = null;
+  let StudentModel = null;
 
   if (mongoUri) {
     try {
@@ -32,13 +37,14 @@ export async function connectStore(mongoUri) {
       TripModel = mongoose.model('Trip', tripSchema);
       ComplaintModel = mongoose.model('Complaint', complaintSchema);
       UserModel = mongoose.model('User', userSchema);
+      StudentModel = mongoose.model('Student', studentSchema);
       usingMongo = true;
     } catch (error) {
       console.warn('MongoDB unreachable, falling back to in-memory store:', error.message);
     }
   }
 
-  const memory = { trips: [], complaints: [], users: [] };
+  const memory = { trips: [], complaints: [], users: [], students: [...seed.students] };
   // Live bus state kept in memory in both modes (ephemeral realtime data).
   const liveBuses = new Map();
 
@@ -106,6 +112,33 @@ export async function connectStore(mongoUri) {
       const complaint = memory.complaints.find((item) => item.id === id);
       if (complaint) complaint.status = status;
       return complaint ?? null;
+    },
+
+    async getStudents() {
+      if (usingMongo) {
+        const stored = await StudentModel.find({}).sort({ busNo: 1 }).limit(500).lean();
+        return stored.length > 0 ? stored : seed.students;
+      }
+      return memory.students;
+    },
+
+    async addStudent(student) {
+      if (usingMongo) {
+        await StudentModel.create(student);
+        return student;
+      }
+      memory.students.push(student);
+      return student;
+    },
+
+    async removeStudent(id) {
+      if (usingMongo) {
+        const { deletedCount } = await StudentModel.deleteOne({ id });
+        return deletedCount > 0;
+      }
+      const before = memory.students.length;
+      memory.students = memory.students.filter((student) => student.id !== id);
+      return memory.students.length < before;
     },
 
     getFleet() {

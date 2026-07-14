@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Bus, Minus, ShieldCheck, Siren, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { Bus, GraduationCap, Minus, Route, Siren, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { AppCard } from '../../components/ui/AppCard';
@@ -18,7 +18,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
 import { tripService } from '../../services/tripService';
 import { aiService } from '../../services/aiService';
-import { AnalyticsSummary, FleetBus } from '../../types/fleet';
+import { AnalyticsSummary, FleetBus, Student } from '../../types/fleet';
 import { WeeklyInsight } from '../../types/ai';
 import { useBusTracking } from '../../hooks/useBusTracking';
 import { DEMO_BUS_NO } from '../../constants/demoRoute';
@@ -29,6 +29,7 @@ const SchoolDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { colors, spacing } = useAppTheme();
   const [fleet, setFleet] = useState<FleetBus[] | null>(null);
+  const [students, setStudents] = useState<Student[] | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [insights, setInsights] = useState<WeeklyInsight[] | null>(null);
   const { bus: liveBus, events } = useBusTracking(DEMO_BUS_NO);
@@ -38,6 +39,7 @@ const SchoolDashboardScreen: React.FC = () => {
   const load = useCallback(async (): Promise<void> => {
     await Promise.allSettled([
       tripService.getFleet().then(setFleet).catch(() => setFleet([])),
+      tripService.getStudents().then(setStudents).catch(() => setStudents([])),
       tripService.getAnalytics().then(setAnalytics).catch(() => setAnalytics(null)),
       aiService.getWeeklyInsights().then(setInsights).catch(() => setInsights([])),
     ]);
@@ -80,11 +82,11 @@ const SchoolDashboardScreen: React.FC = () => {
       </Animated.View>
 
       <View style={{ marginTop: spacing.md }}>
-        {analytics ? (
+        {analytics && fleet && students ? (
           <Animated.View entering={FadeInDown.duration(400)} style={styles.statsRow}>
-            <StatCard label="Active Trips" value={String(analytics.activeTrips)} icon={Bus} />
-            <StatCard label="Fleet Score" value={String(analytics.avgFleetSafetyScore)} icon={ShieldCheck} tint={colors.aiAccent} />
-            <StatCard label="Alerts (7d)" value={String(analytics.totalViolationsWeek)} icon={Siren} tint={colors.warning} />
+            <StatCard label="Buses" value={String(fleet.length)} icon={Bus} />
+            <StatCard label="Students" value={String(students.length)} icon={GraduationCap} tint={colors.secondaryAccent} />
+            <StatCard label="Trips Active" value={String(analytics.activeTrips)} icon={Route} tint={colors.warning} />
           </Animated.View>
         ) : (
           <Skeleton height={104} />

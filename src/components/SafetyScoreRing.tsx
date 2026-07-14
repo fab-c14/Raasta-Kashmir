@@ -14,7 +14,7 @@ interface SafetyScoreRingProps {
 export const SafetyScoreRing: React.FC<SafetyScoreRingProps> = ({
   score,
   size = 110,
-  label = 'AI Safety Score',
+  label = 'Safety Score',
 }) => {
   const { colors } = useAppTheme();
   const strokeWidth = 9;
@@ -48,9 +48,16 @@ export const SafetyScoreRing: React.FC<SafetyScoreRingProps> = ({
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
-      <View style={styles.center}>
-        <Text style={[typography.h2, { color: colors.textPrimary }]}>{Math.round(clamped)}</Text>
-        <Text style={[typography.caption, { color: colors.textSecondary, textAlign: 'center' }]}>
+      <View style={[styles.center, { maxWidth: size * 0.68 }]}>
+        <Text style={[typography.h2, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
+          {Math.round(clamped)}
+        </Text>
+        <Text
+          style={[typography.caption, { color: colors.textSecondary, textAlign: 'center' }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           {label}
         </Text>
       </View>

@@ -20,6 +20,14 @@ export interface DriverRanking {
   trend: 'up' | 'down' | 'flat';
 }
 
+export interface Student {
+  id: string;
+  name: string;
+  className: string;
+  busNo: string;
+  parentName?: string;
+}
+
 export type ComplaintStatus = 'open' | 'reviewing' | 'resolved';
 
 export interface Complaint {

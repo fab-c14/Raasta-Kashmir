@@ -5,6 +5,7 @@ import {
   ComplianceRecord,
   DriverRanking,
   FleetBus,
+  Student,
   ViolationRecord,
 } from '../../types/fleet';
 import {
@@ -67,6 +68,14 @@ export const demoCompliance: ComplianceRecord[] = [
   { busNo: 'JK-01-C-8810', schoolName: 'Kashmir Valley School', routeName: 'Bemina → Kashmir Valley School', insuranceValidTill: '09 Dec 2026', lastInspection: '21 Jun 2026', isCompliant: true },
   { busNo: 'JK-01-D-2296', schoolName: 'Kashmir Valley School', routeName: 'Soura → Kashmir Valley School', insuranceValidTill: '28 Feb 2027', lastInspection: '03 Feb 2026', isCompliant: false },
   { busNo: 'JK-01-E-6634', schoolName: 'Green Meadows School', routeName: 'HMT → Green Meadows School', insuranceValidTill: '07 Jan 2027', lastInspection: '11 Apr 2026', isCompliant: true },
+];
+
+export const demoStudents: Student[] = [
+  { id: 'stu_1', name: 'Ayaan Bhat', className: 'Class 5-A', busNo: DEMO_BUS_NO, parentName: 'Amina Shah' },
+  { id: 'stu_2', name: 'Zoya Mir', className: 'Class 3-B', busNo: DEMO_BUS_NO, parentName: 'Shabnam Mir' },
+  { id: 'stu_3', name: 'Rehan Wani', className: 'Class 7-A', busNo: 'JK-01-B-4472', parentName: 'Rafiq Wani' },
+  { id: 'stu_4', name: 'Mehak Lone', className: 'Class 4-C', busNo: 'JK-01-B-4472', parentName: 'Sajad Lone' },
+  { id: 'stu_5', name: 'Ibrahim Dar', className: 'Class 6-B', busNo: 'JK-01-D-2296', parentName: 'Imran Bhat' },
 ];
 
 export const demoViolations: ViolationRecord[] = [

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Sparkles } from 'lucide-react-native';
 import { AppCard } from './ui/AppCard';
+import { Badge } from './ui/Badge';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { typography } from '../theme/typography';
 
@@ -10,20 +10,17 @@ interface AiInsightCardProps {
   children: React.ReactNode;
 }
 
-/** Purple-accented card used for every AI Safety Copilot output. */
+/** Plain card for AI-generated content, marked with a small neutral tag. */
 export const AiInsightCard: React.FC<AiInsightCardProps> = ({ title, children }) => {
   const { colors, spacing } = useAppTheme();
 
   return (
-    <AppCard accent="ai" style={{ marginBottom: spacing.md }}>
+    <AppCard style={{ marginBottom: spacing.md }}>
       <View style={styles.header}>
-        <Sparkles size={16} color={colors.aiAccent} strokeWidth={2} />
-        <Text
-          style={[typography.titleMedium, styles.title, { color: colors.aiAccent }]}
-          numberOfLines={2}
-        >
+        <Text style={[typography.titleMedium, styles.title, { color: colors.textPrimary }]} numberOfLines={2}>
           {title}
         </Text>
+        <Badge label="AI" tone="neutral" />
       </View>
       <View style={{ marginTop: spacing.sm }}>{children}</View>
     </AppCard>
@@ -32,5 +29,5 @@ export const AiInsightCard: React.FC<AiInsightCardProps> = ({ title, children })
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center' },
-  title: { flex: 1, marginLeft: 8 },
+  title: { flex: 1, marginRight: 8 },
 });

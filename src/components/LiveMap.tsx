@@ -14,6 +14,8 @@ interface LiveMapProps {
   followBus?: boolean;
   /** Highlights the parent's chosen pickup stop. */
   pickupLocation?: LatLng | null;
+  /** Parked buses to show as muted markers (full-map fleet view). */
+  idleBuses?: { busNo: string; location: LatLng }[];
   /** Shows an expand button that opens the full-screen map. */
   onExpand?: () => void;
 }
@@ -28,6 +30,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   height,
   followBus = true,
   pickupLocation = null,
+  idleBuses = [],
   onExpand,
 }) => {
   const { colors, roundness, isDark, shadows } = useAppTheme();
@@ -86,6 +89,13 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             </View>
           </Marker>
         ) : null}
+        {idleBuses.map((idle) => (
+          <Marker key={idle.busNo} coordinate={idle.location} anchor={{ x: 0.5, y: 0.5 }} title={`${idle.busNo} (parked)`}>
+            <View style={[styles.idleMarker, { backgroundColor: colors.textSecondary }]}>
+              <Bus size={13} color="#FFFFFF" strokeWidth={2.2} />
+            </View>
+          </Marker>
+        ))}
         {busLocation ? (
           <Marker coordinate={busLocation} rotation={heading} anchor={{ x: 0.5, y: 0.5 }} flat>
             <View style={[styles.busMarker, { backgroundColor: colors.primary }]}>
@@ -122,6 +132,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+  },
+  idleMarker: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    opacity: 0.85,
   },
   pickupMarker: {
     width: 30,

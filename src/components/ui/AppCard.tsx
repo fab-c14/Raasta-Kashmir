@@ -5,7 +5,7 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 interface AppCardProps {
   children: React.ReactNode;
   style?: ViewStyle;
-  accent?: 'default' | 'ai' | 'danger';
+  accent?: 'default' | 'danger';
 }
 
 /**
@@ -15,12 +15,7 @@ interface AppCardProps {
  */
 export const AppCard: React.FC<AppCardProps> = ({ children, style, accent = 'default' }) => {
   const { colors, roundness, shadows, spacing } = useAppTheme();
-  const borderColor =
-    accent === 'ai'
-      ? `${colors.aiAccent}66`
-      : accent === 'danger'
-        ? `${colors.danger}66`
-        : colors.border;
+  const borderColor = accent === 'danger' ? `${colors.danger}66` : colors.border;
 
   return (
     <View

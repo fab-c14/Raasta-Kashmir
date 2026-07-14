@@ -8,6 +8,7 @@ import {
   ComplianceRecord,
   DriverRanking,
   FleetBus,
+  Student,
   ViolationRecord,
 } from '../types/fleet';
 import {
@@ -17,12 +18,14 @@ import {
   demoCompliance,
   demoFleet,
   demoRankings,
+  demoStudents,
   demoViolations,
 } from './demo/demoData';
 import { createId } from '../utils/id';
 
 const HISTORY_KEY = '@raasta_trip_history';
 const COMPLAINTS_KEY = '@raasta_complaints';
+const STUDENTS_KEY = '@raasta_students';
 
 const readJson = async <T>(key: string, fallback: T): Promise<T> => {
   try {
@@ -118,6 +121,41 @@ export const tripService = {
         const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
         await AsyncStorage.setItem(COMPLAINTS_KEY, JSON.stringify([complaint, ...stored]));
         return complaint;
+      }
+    );
+  },
+
+  async getStudents(): Promise<Student[]> {
+    return liveOrDemo(
+      async () => (await apiClient.get<Student[]>('/api/students')).data,
+      () => readJson<Student[]>(STUDENTS_KEY, demoStudents)
+    );
+  },
+
+  async addStudent(name: string, className: string, busNo: string): Promise<Student> {
+    const student: Student = { id: createId('stu'), name, className, busNo };
+    return liveOrDemo(
+      async () =>
+        (await apiClient.post<Student>('/api/students', { name, className, busNo })).data,
+      async () => {
+        const stored = await readJson<Student[]>(STUDENTS_KEY, demoStudents);
+        await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify([...stored, student]));
+        return student;
+      }
+    );
+  },
+
+  async removeStudent(id: string): Promise<void> {
+    await liveOrDemo(
+      async () => {
+        await apiClient.delete(`/api/students/${id}`);
+      },
+      async () => {
+        const stored = await readJson<Student[]>(STUDENTS_KEY, demoStudents);
+        await AsyncStorage.setItem(
+          STUDENTS_KEY,
+          JSON.stringify(stored.filter((student) => student.id !== id))
+        );
       }
     );
   },

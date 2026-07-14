@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Bell, FileWarning, History, Home, LucideIcon, MessageSquareWarning, Trophy, User } from 'lucide-react-native';
+import { Bell, FileWarning, GraduationCap, History, Home, LucideIcon, MessageSquareWarning, Trophy, User } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { fontFamilies } from '../theme/typography';
@@ -9,6 +9,7 @@ import ParentHomeScreen from '../screens/parent/ParentHomeScreen';
 import ParentAlertsScreen from '../screens/parent/ParentAlertsScreen';
 import SchoolDashboardScreen from '../screens/school/SchoolDashboardScreen';
 import SchoolComplaintsScreen from '../screens/school/SchoolComplaintsScreen';
+import SchoolStudentsScreen from '../screens/school/SchoolStudentsScreen';
 import SchoolRankingsScreen from '../screens/school/SchoolRankingsScreen';
 import RtoDashboardScreen from '../screens/rto/RtoDashboardScreen';
 import RtoViolationsScreen from '../screens/rto/RtoViolationsScreen';
@@ -37,6 +38,7 @@ const tabsForRole: Record<string, TabScreen[]> = {
   ],
   school: [
     { name: 'SchoolHome', component: SchoolDashboardScreen, label: 'Fleet', icon: Home },
+    { name: 'Students', component: SchoolStudentsScreen, label: 'Students', icon: GraduationCap },
     { name: 'Complaints', component: SchoolComplaintsScreen, label: 'Complaints', icon: MessageSquareWarning },
     { name: 'Rankings', component: SchoolRankingsScreen, label: 'Rankings', icon: Trophy },
     { name: 'Profile', component: ProfileScreen, label: 'Profile', icon: User },

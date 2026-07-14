@@ -82,9 +82,9 @@ const ParentHomeScreen: React.FC = () => {
       <ScreenHeader title="Track Bus" subtitle={`${busNo} · ${user?.schoolName ?? 'School'}`} showLogout />
 
       {showProximityBanner ? (
-        <AppCard accent={proximity.phase === 'imminent' ? 'danger' : 'ai'} style={{ marginBottom: spacing.md }}>
+        <AppCard accent={proximity.phase === 'imminent' ? 'danger' : 'default'} style={{ marginBottom: spacing.md }}>
           <View style={styles.bannerRow}>
-            <BellRing size={18} color={proximity.phase === 'imminent' ? colors.danger : colors.aiAccent} />
+            <BellRing size={18} color={proximity.phase === 'imminent' ? colors.danger : colors.primary} />
             <Text style={[typography.titleMedium, styles.bannerText, { color: colors.textPrimary }]} numberOfLines={2}>
               {proximityMessage[proximity.phase ?? 'approaching']}
             </Text>
@@ -167,7 +167,7 @@ const ParentHomeScreen: React.FC = () => {
           <Animated.View entering={FadeInDown.delay(160).duration(400)} style={[styles.statsRow, { marginTop: spacing.md }]}>
             <StatCard label="Speed" value={`${Math.round(bus.speedKmh)} km/h`} icon={Gauge} tint={bus.speedKmh > 50 ? colors.danger : colors.primary} />
             <StatCard label="Next Stop" value={bus.nextStop} icon={MapPin} tint={colors.secondaryAccent} />
-            <StatCard label="Driver" value={bus.driverName.split(' ')[0]} icon={User} tint={colors.aiAccent} />
+            <StatCard label="Driver" value={bus.driverName.split(' ')[0]} icon={User} />
           </Animated.View>
         </>
       ) : (

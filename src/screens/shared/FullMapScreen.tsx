@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,17 +10,42 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
 import { DEMO_STOPS } from '../../constants/demoRoute';
 import { AppStackParamList } from '../../navigation/types';
+import { tripService } from '../../services/tripService';
+import { LatLng } from '../../types/trip';
 import { formatSpeed } from '../../utils/format';
 
 type FullMapRoute = RouteProp<AppStackParamList, 'FullMap'>;
 
-/** Edge-to-edge live map with the route, stops, bus and pickup point. */
+/** Edge-to-edge live map: route, stops, live bus, pickup, parked fleet. */
 const FullMapScreen: React.FC = () => {
   const { params } = useRoute<FullMapRoute>();
   const navigation = useNavigation();
   const { colors, shadows } = useAppTheme();
   const { bus } = useBusTracking(params.busNo);
   const pickup = DEMO_STOPS.find((stop) => stop.name === params.pickupStopName);
+  const [idleBuses, setIdleBuses] = useState<{ busNo: string; location: LatLng }[]>([]);
+
+  // Other fleet buses are parked at the school; spread them slightly so the
+  // markers don't stack on one point.
+  useEffect(() => {
+    const school = DEMO_STOPS[DEMO_STOPS.length - 1].location;
+    tripService
+      .getFleet()
+      .then((fleet) =>
+        setIdleBuses(
+          fleet
+            .filter((fleetBus) => fleetBus.busNo !== params.busNo)
+            .map((fleetBus, index) => ({
+              busNo: fleetBus.busNo,
+              location: {
+                latitude: school.latitude + 0.0006,
+                longitude: school.longitude + 0.0009 * (index + 1),
+              },
+            }))
+        )
+      )
+      .catch(() => setIdleBuses([]));
+  }, [params.busNo]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
@@ -29,6 +54,7 @@ const FullMapScreen: React.FC = () => {
           busLocation={bus?.location ?? null}
           heading={bus?.heading ?? 0}
           pickupLocation={pickup?.location ?? null}
+          idleBuses={idleBuses}
         />
         <TouchableOpacity
           accessibilityRole="button"

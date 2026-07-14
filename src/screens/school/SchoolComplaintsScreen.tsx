@@ -104,7 +104,7 @@ const SchoolComplaintsScreen: React.FC = () => {
               {complaint.analysis ? (
                 <View style={[styles.analysis, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                   <View style={styles.badgeRow}>
-                    <Badge label={complaint.analysis.category} tone="ai" />
+                    <Badge label={complaint.analysis.category} tone="info" />
                     <Badge
                       label={complaint.analysis.severity.toUpperCase()}
                       tone={complaint.analysis.severity === 'high' ? 'danger' : complaint.analysis.severity === 'medium' ? 'warning' : 'success'}
