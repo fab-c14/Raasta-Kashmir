@@ -41,8 +41,10 @@ const SchoolComplaintsScreen: React.FC = () => {
         setComplaints((current) =>
           current?.map((item) => (item.id === complaint.id ? { ...item, analysis } : item)) ?? null
         );
-      } catch {
-        // Leave the complaint without analysis; it still shows and can be actioned.
+        // Persist the analysis result so it doesn't re-run on subsequent logins/loads
+        await tripService.updateComplaintAnalysis(complaint.id, analysis);
+      } catch (err) {
+        console.error('Failed to run AI triage or save result:', err);
       }
     }
   }, []);

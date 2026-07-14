@@ -104,13 +104,15 @@ export async function connectStore(mongoUri) {
       return memory.users.find((user) => user.uid === uid) ?? null;
     },
 
-    async updateComplaintStatus(id, status) {
+    async updateComplaint(id, updates) {
       if (usingMongo) {
-        await ComplaintModel.updateOne({ id }, { $set: { status } });
+        await ComplaintModel.updateOne({ id }, { $set: updates });
         return ComplaintModel.findOne({ id }).lean();
       }
       const complaint = memory.complaints.find((item) => item.id === id);
-      if (complaint) complaint.status = status;
+      if (complaint) {
+        Object.assign(complaint, updates);
+      }
       return complaint ?? null;
     },
 
@@ -139,6 +141,18 @@ export async function connectStore(mongoUri) {
       const before = memory.students.length;
       memory.students = memory.students.filter((student) => student.id !== id);
       return memory.students.length < before;
+    },
+
+    async linkParentToStudent(id, parentName) {
+      if (usingMongo) {
+        await StudentModel.updateOne({ id }, { $set: { parentName } });
+        return StudentModel.findOne({ id }).lean();
+      }
+      const student = memory.students.find((item) => item.id === id);
+      if (student) {
+        student.parentName = parentName;
+      }
+      return student ?? null;
     },
 
     getFleet() {

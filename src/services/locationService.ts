@@ -14,6 +14,22 @@ export const locationService = {
     return status === 'granted';
   },
 
+  async getCurrentLocation(): Promise<TripPoint | null> {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      return {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        timestamp: location.timestamp,
+        speedKmh: Math.max(0, (location.coords.speed ?? 0) * 3.6),
+      };
+    } catch {
+      return null;
+    }
+  },
+
   async watchPosition(
     onPoint: (point: TripPoint) => void
   ): Promise<LocationUnsubscribe> {

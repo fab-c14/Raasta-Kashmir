@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { AlertTriangle, Gauge, MapPinOff, Siren, Timer, LucideIcon } from 'lucide-react-native';
+import { AlertTriangle, Gauge, MapPinOff, Siren, Timer, LucideIcon, MapPin } from 'lucide-react-native';
 import { TripEvent, TripEventType } from '../types/trip';
 import { useAppTheme } from '../hooks/useAppTheme';
 import { typography } from '../theme/typography';
@@ -20,6 +20,7 @@ export const AlertListItem: React.FC<AlertListItemProps> = ({ event }) => {
     sos: { icon: Siren, color: colors.danger, title: 'Emergency SOS' },
     trip_started: { icon: AlertTriangle, color: colors.success, title: 'Trip Started' },
     trip_ended: { icon: AlertTriangle, color: colors.textSecondary, title: 'Trip Ended' },
+    student_pickup: { icon: MapPin, color: colors.primary, title: 'Student Pickup' },
   };
   const { icon: Icon, color, title } = visuals[event.type];
 

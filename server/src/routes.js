@@ -76,11 +76,25 @@ export function registerRoutes(app, store) {
     res.json({ ok: true });
   }));
 
+  app.patch('/api/students/:id/link', wrap(async (req, res) => {
+    const { parentName } = req.body;
+    if (!parentName) {
+      res.status(400).json({ message: 'parentName is required' });
+      return;
+    }
+    const student = await store.linkParentToStudent(req.params.id, parentName);
+    if (!student) {
+      res.status(404).json({ message: 'Student not found' });
+      return;
+    }
+    res.json(student);
+  }));
+
   // ── Complaints ───────────────────────────────────────────────────────
   app.get('/api/complaints', wrap(async (_req, res) => res.json(await store.getComplaints())));
 
   app.post('/api/complaints', wrap(async (req, res) => {
-    const { busNo, parentName, text } = req.body;
+    const { busNo, parentName, text, analysis } = req.body;
     const complaint = {
       id: `cmp_${Date.now().toString(36)}`,
       busNo,
@@ -88,18 +102,26 @@ export function registerRoutes(app, store) {
       text,
       createdAt: Date.now(),
       status: 'open',
+      analysis: analysis ?? null,
     };
     await store.saveComplaint(complaint);
     res.status(201).json(complaint);
   }));
 
   app.patch('/api/complaints/:id', wrap(async (req, res) => {
-    const { status } = req.body;
-    if (!['open', 'reviewing', 'resolved'].includes(status)) {
-      res.status(400).json({ message: 'status must be open, reviewing or resolved' });
-      return;
+    const { status, analysis } = req.body;
+    const updates = {};
+    if (status !== undefined) {
+      if (!['open', 'reviewing', 'resolved'].includes(status)) {
+        res.status(400).json({ message: 'status must be open, reviewing or resolved' });
+        return;
+      }
+      updates.status = status;
     }
-    const updated = await store.updateComplaintStatus(req.params.id, status);
+    if (analysis !== undefined) {
+      updates.analysis = analysis;
+    }
+    const updated = await store.updateComplaint(req.params.id, updates);
     if (!updated) {
       res.status(404).json({ message: 'Complaint not found' });
       return;

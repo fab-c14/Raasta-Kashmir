@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertListItem } from '../../components/AlertListItem';
 import { LiveMap } from '../../components/LiveMap';
 import { SafetyScoreRing } from '../../components/SafetyScoreRing';
+import { AiInsightCard } from '../../components/AiInsightCard';
 import { AppStackParamList } from '../../navigation/types';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
@@ -46,6 +47,31 @@ const TripDetailScreen: React.FC = () => {
 
       <SectionTitle title="Route" />
       <LiveMap busLocation={lastPoint} height={220} followBus={false} />
+
+      {trip.aiSummary && trip.aiReport ? (
+        <>
+          <SectionTitle title="AI Performance Review" />
+          <AiInsightCard title="AI Trip Summary">
+            <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>{trip.aiSummary.headline}</Text>
+            <Text style={[typography.bodyMedium, { color: colors.textSecondary, marginTop: 6 }]}>
+              {trip.aiSummary.summary}
+            </Text>
+          </AiInsightCard>
+          <AiInsightCard title="AI Safety Assessment">
+            <Text style={[typography.bodyMedium, { color: colors.textPrimary }]}>{trip.aiReport.headline}</Text>
+            {trip.aiReport.risks.map((risk) => (
+              <Text key={risk} style={[typography.bodySmall, { color: colors.danger, marginTop: 6 }]}>
+                ▲ {risk}
+              </Text>
+            ))}
+            {trip.aiReport.strengths.map((strength) => (
+              <Text key={strength} style={[typography.bodySmall, { color: colors.success, marginTop: 6 }]}>
+                ✓ {strength}
+              </Text>
+            ))}
+          </AiInsightCard>
+        </>
+      ) : null}
 
       <SectionTitle title={`Safety Events (${alerts.length})`} />
       {alerts.length === 0 ? (

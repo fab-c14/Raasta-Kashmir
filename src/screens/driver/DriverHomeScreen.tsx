@@ -1,9 +1,9 @@
-import React from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, View, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Siren } from 'lucide-react-native';
+import { Siren, Users, Check } from 'lucide-react-native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { AppCard } from '../../components/ui/AppCard';
@@ -18,17 +18,39 @@ import { useTrip } from '../../context/TripContext';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
 import { SPEED_LIMIT_KMH } from '../../constants/safety';
-import { DEMO_BUS_NO, DEMO_ROUTE_NAME } from '../../constants/demoRoute';
+import {
+  DEMO_BUS_NO,
+  DEMO_ROUTE_NAME,
+  DEMO_ROUTE_PATH_A,
+  DEMO_ROUTE_PATH_B,
+  SCHOOL_LOCATION,
+} from '../../constants/demoRoute';
 import { AppStackParamList } from '../../navigation/types';
 import { formatKm } from '../../utils/format';
+import { locationService } from '../../services/locationService';
+import { distanceMeters } from '../../utils/geo';
 
 type Navigation = NativeStackNavigationProp<AppStackParamList>;
 
 const DriverHomeScreen: React.FC = () => {
   const { user } = useAuth();
-  const { trip, lastPoint, liveScore, isSimulatedGps, startTrip, endTrip, triggerSos } = useTrip();
+  const {
+    trip,
+    lastPoint,
+    liveScore,
+    isSimulatedGps,
+    upcomingPickup,
+    busStudents,
+    startTrip,
+    endTrip,
+    triggerSos,
+    notifyParentOfPickup,
+    setSimulationRoute,
+  } = useTrip();
   const { colors, spacing } = useAppTheme();
   const navigation = useNavigation<Navigation>();
+  const [isDiverging, setIsDiverging] = useState(false);
+  const [pickupMessageText, setPickupMessageText] = useState('');
 
   const speed = lastPoint?.speedKmh ?? 0;
   const isOverspeed = speed > SPEED_LIMIT_KMH;
@@ -36,13 +58,70 @@ const DriverHomeScreen: React.FC = () => {
     ? [...trip.events].reverse().filter((e) => e.type !== 'trip_started').slice(0, 4)
     : [];
 
+  const stopStudentCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    busStudents.forEach((student) => {
+      if (student.pickupStop) {
+        counts[student.pickupStop] = (counts[student.pickupStop] ?? 0) + 1;
+      }
+    });
+    return counts;
+  }, [busStudents]);
+
+  // 1. Passive Auto-Start Effect
+  useEffect(() => {
+    if (!user || trip) return;
+
+    let active = true;
+
+    const checkAutoStart = async () => {
+      // Short delay for UI hydration
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!active) return;
+
+      const hasPermission = await locationService.requestPermission();
+      if (!active) return;
+
+      if (hasPermission) {
+        const location = await locationService.getCurrentLocation();
+        if (!active) return;
+
+        if (location) {
+          const dist = distanceMeters(location, SCHOOL_LOCATION);
+          // If driver is outside school (>150m), auto-start!
+          if (dist > 150) {
+            await startTrip(user, DEMO_ROUTE_PATH_A);
+          }
+        } else {
+          // If GPS coordinate cannot be resolved, default to auto-start simulation
+          await startTrip(user, DEMO_ROUTE_PATH_A);
+        }
+      } else {
+        // If permission denied, auto-start simulation
+        await startTrip(user, DEMO_ROUTE_PATH_A);
+      }
+    };
+
+    checkAutoStart();
+
+    return () => {
+      active = false;
+    };
+  }, [user, trip, startTrip]);
+
   const handleStart = async (): Promise<void> => {
-    if (user) await startTrip(user);
+    if (user) await startTrip(user, isDiverging ? DEMO_ROUTE_PATH_B : DEMO_ROUTE_PATH_A);
   };
 
   const handleEnd = async (): Promise<void> => {
     const finished = await endTrip();
     if (finished) navigation.navigate('TripSummary', { trip: finished });
+  };
+
+  const handleRouteToggle = () => {
+    const nextDiverging = !isDiverging;
+    setIsDiverging(nextDiverging);
+    setSimulationRoute(nextDiverging ? DEMO_ROUTE_PATH_B : DEMO_ROUTE_PATH_A);
   };
 
   const handleSos = (): void => {
@@ -65,9 +144,109 @@ const DriverHomeScreen: React.FC = () => {
           busLocation={lastPoint}
           height={240}
           followBus={trip !== null}
+          stopStudentCounts={stopStudentCounts}
           onExpand={() => navigation.navigate('FullMap', { busNo: user?.vehicleNo ?? DEMO_BUS_NO })}
         />
       </Animated.View>
+
+      {/* Route Detour Control Card (simulation mode only) */}
+      {trip && isSimulatedGps ? (
+        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+          <AppCard style={{ marginTop: spacing.sm, padding: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>Simulation Detour Control</Text>
+                <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
+                  {isDiverging ? "Detoured via Boulevard Road (Route B)" : "Following School Assigned Path (Route A)"}
+                </Text>
+              </View>
+              <PrimaryButton
+                label={isDiverging ? "Reset to Route A" : "Simulate Detour"}
+                onPress={handleRouteToggle}
+                variant={isDiverging ? "gradient" : "outline"}
+                style={{ minWidth: 120, height: 36, paddingVertical: 0 }}
+              />
+            </View>
+          </AppCard>
+        </Animated.View>
+      ) : null}
+
+      {/* Upcoming Student Pickup Card */}
+      {trip && upcomingPickup ? (
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <AppCard accent="default" style={{ marginTop: spacing.md }}>
+            <View style={styles.pickupRow}>
+              <View style={[styles.pickupIconWrap, { backgroundColor: `${colors.primary}1A` }]}>
+                <Users size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, paddingHorizontal: 10 }}>
+                <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>
+                  Approaching Stop: {upcomingPickup.stopName}
+                </Text>
+                <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 1 }]}>
+                  Pick up: {upcomingPickup.studentNames.join(', ')}
+                </Text>
+              </View>
+              <PrimaryButton
+                label={upcomingPickup.parentNotified ? "Notified ✓" : "Confirm Boarding"}
+                onPress={() => {
+                  if (pickupMessageText.trim().length > 0) {
+                    notifyParentOfPickup(`Message to parent: ${pickupMessageText.trim()}`);
+                    setPickupMessageText('');
+                  } else {
+                    notifyParentOfPickup();
+                  }
+                }}
+                disabled={upcomingPickup.parentNotified}
+                variant={upcomingPickup.parentNotified ? "outline" : "gradient"}
+                style={{ height: 36, paddingVertical: 0, minWidth: 120 }}
+              />
+            </View>
+
+            {/* Direct custom message to parent */}
+            {!upcomingPickup.parentNotified ? (
+              <View style={{ marginTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, paddingTop: 12 }}>
+                <Text style={[typography.caption, { color: colors.textSecondary, fontFamily: 'Poppins-Medium', marginBottom: 6 }]}>
+                  Send message to parents (optional):
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  <TextInput
+                    placeholder="Type message (e.g. Bus is arriving in 2 mins)"
+                    placeholderTextColor={colors.textSecondary}
+                    value={pickupMessageText}
+                    onChangeText={setPickupMessageText}
+                    style={{
+                      borderColor: colors.border,
+                      color: colors.textPrimary,
+                      backgroundColor: colors.card,
+                      borderRadius: 8,
+                      paddingHorizontal: 10,
+                      height: 36,
+                      flex: 1,
+                      fontFamily: 'Poppins-Regular',
+                      fontSize: 12,
+                      borderWidth: 1,
+                    }}
+                  />
+                  <PrimaryButton
+                    label="Send Msg"
+                    onPress={() => {
+                      if (pickupMessageText.trim().length > 0) {
+                        notifyParentOfPickup(`Message to parent: ${pickupMessageText.trim()}`);
+                        setPickupMessageText('');
+                      } else {
+                        Alert.alert('Empty Message', 'Please type a message first or tap Confirm Boarding.');
+                      }
+                    }}
+                    variant="gradient"
+                    style={{ height: 36, paddingVertical: 0, minWidth: 80 }}
+                  />
+                </View>
+              </View>
+            ) : null}
+          </AppCard>
+        </Animated.View>
+      ) : null}
 
       <Animated.View entering={FadeInDown.delay(80).duration(400)} style={[styles.statsRow, { marginTop: spacing.md }]}>
         <AppCard style={styles.speedCard}>
@@ -145,6 +324,14 @@ const styles = StyleSheet.create({
   actionButton: { flex: 1.6 },
   sosButton: { flex: 1 },
   sosRow: { flexDirection: 'row', alignItems: 'center' },
+  pickupRow: { flexDirection: 'row', alignItems: 'center' },
+  pickupIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default DriverHomeScreen;

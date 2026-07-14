@@ -138,6 +138,41 @@ const SchoolDashboardScreen: React.FC = () => {
           );
         })
       )}
+
+      <SectionTitle title="Student Invite Codes" />
+      {students === null ? (
+        <Skeleton height={100} />
+      ) : (
+        students.map((student) => {
+          const displayCode = student.id.toUpperCase().replace('_', '-');
+          const isLinked = student.parentName && student.parentName.trim().length > 0;
+          return (
+            <AppCard key={student.id} style={{ marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>{student.name}</Text>
+                  <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
+                    {student.className} · Bus: {student.busNo}
+                  </Text>
+                  {isLinked ? (
+                    <Text style={[typography.caption, { color: colors.success, marginTop: 4, fontFamily: 'Poppins-Medium' }]}>
+                      ✓ Parent linked: {student.parentName}
+                    </Text>
+                  ) : (
+                    <Text style={[typography.caption, { color: colors.warning, marginTop: 4, fontFamily: 'Poppins-Medium' }]}>
+                      ⌛ Awaiting parent linkage
+                    </Text>
+                  )}
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={[typography.caption, { color: colors.textSecondary, marginBottom: 2 }]}>Invite Code</Text>
+                  <Badge label={displayCode} tone="info" />
+                </View>
+              </View>
+            </AppCard>
+          );
+        })
+      )}
     </ScreenContainer>
   );
 };

@@ -18,6 +18,8 @@ import { BrandMark } from '../components/BrandMark';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/types';
 import { UserRole } from '../types/auth';
+import { tripService } from '../services/tripService';
+import { typography } from '../theme/typography';
 
 type SignupScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -63,12 +65,10 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
       extraDetails.vehicleNo = vehicleNo.trim();
       extraDetails.licenseNo = licenseNo.trim();
     } else if (role === 'parent') {
-      if (!assignedBusNo.trim() || !schoolName.trim()) {
-        setValidationError('Parents must specify Bus No. and School Name.');
+      if (!assignedBusNo.trim()) {
+        setValidationError('Parents must specify at least one Child Invite Code.');
         return;
       }
-      extraDetails.assignedBusNo = assignedBusNo.trim();
-      extraDetails.schoolName = schoolName.trim();
     } else if (role === 'school') {
       if (!schoolName.trim()) {
         setValidationError('School administrators must specify School Name.');
@@ -85,9 +85,40 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
 
     setIsSubmitting(true);
     try {
+      if (role === 'parent') {
+        const codes = assignedBusNo.split(',').map((c) => c.trim().toLowerCase());
+        const allStudents = await tripService.getStudents();
+        const matched = allStudents.filter((s) => {
+          const rawId = s.id.toLowerCase().replace('stu-', 'stu_');
+          const normalized = rawId.startsWith('stu_') ? rawId : `stu_${rawId}`;
+          return (
+            codes.includes(s.id.toLowerCase()) ||
+            codes.includes(normalized) ||
+            codes.includes(s.id.replace('stu_', 'stu-').toLowerCase())
+          );
+        });
+
+        if (matched.length === 0) {
+          setValidationError(
+            'No valid student profiles match the entered invite code(s). Please try default codes STU-1 or STU-arman.'
+          );
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Link parent name to matched students in the database
+        for (const stu of matched) {
+          await tripService.linkParentToStudent(stu.id, name);
+        }
+
+        extraDetails.assignedBusNo = matched[0].busNo;
+        extraDetails.schoolName = 'Kashmir Valley School';
+      }
+
       await register(email, password, name, role, extraDetails);
     } catch (e: any) {
       console.log('Signup error:', e.message);
+      setValidationError(e.message ?? 'Registration failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -126,27 +157,19 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
         return (
           <>
             <TextInput
-              label="Assigned Bus Plate No."
+              label="Child Invite Code(s)"
               value={assignedBusNo}
               onChangeText={setAssignedBusNo}
               mode="outlined"
               outlineColor={colors.border}
               activeOutlineColor={colors.primary}
               textColor={colors.textPrimary}
-              placeholder="e.g. JK-01-A-1234"
+              placeholder="e.g. STU-1, STU-arman"
               style={[styles.input, { backgroundColor: colors.card }]}
             />
-            <TextInput
-              label="School Name"
-              value={schoolName}
-              onChangeText={setSchoolName}
-              mode="outlined"
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-              textColor={colors.textPrimary}
-              placeholder="e.g. Kashmir Valley School"
-              style={[styles.input, { backgroundColor: colors.card, marginTop: 12 }]}
-            />
+            <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 6, paddingHorizontal: 4 }]}>
+              Enter child invite code(s) (comma separated) to link your parent account. Default codes: STU-1 (Ayaan), STU-arman (Arman), STU-2 (Zoya).
+            </Text>
           </>
         );
       case 'school':

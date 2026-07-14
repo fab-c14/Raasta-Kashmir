@@ -105,7 +105,12 @@ export const tripService = {
     }, demo);
   },
 
-  async submitComplaint(busNo: string, parentName: string, text: string): Promise<Complaint> {
+  async submitComplaint(
+    busNo: string,
+    parentName: string,
+    text: string,
+    analysis?: Complaint['analysis']
+  ): Promise<Complaint> {
     const complaint: Complaint = {
       id: createId('cmp'),
       busNo,
@@ -113,10 +118,11 @@ export const tripService = {
       text,
       createdAt: Date.now(),
       status: 'open',
+      analysis,
     };
     return liveOrDemo(
       async () =>
-        (await apiClient.post<Complaint>('/api/complaints', { busNo, parentName, text })).data,
+        (await apiClient.post<Complaint>('/api/complaints', { busNo, parentName, text, analysis })).data,
       async () => {
         const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
         await AsyncStorage.setItem(COMPLAINTS_KEY, JSON.stringify([complaint, ...stored]));
@@ -128,7 +134,17 @@ export const tripService = {
   async getStudents(): Promise<Student[]> {
     return liveOrDemo(
       async () => (await apiClient.get<Student[]>('/api/students')).data,
-      () => readJson<Student[]>(STUDENTS_KEY, demoStudents)
+      async () => {
+        const stored = await readJson<Student[]>(STUDENTS_KEY, []);
+        const merged = [...stored];
+        for (const defaultStu of demoStudents) {
+          if (!merged.some((s) => s.id === defaultStu.id)) {
+            merged.push(defaultStu);
+          }
+        }
+        await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify(merged));
+        return merged;
+      }
     );
   },
 
@@ -179,6 +195,19 @@ export const tripService = {
     );
   },
 
+  async updateComplaintAnalysis(id: string, analysis: Complaint['analysis']): Promise<void> {
+    await liveOrDemo(
+      async () => {
+        await apiClient.patch(`/api/complaints/${id}`, { analysis });
+      },
+      async () => {
+        const stored = await readJson<Complaint[]>(COMPLAINTS_KEY, []);
+        const updated = stored.map((item) => (item.id === id ? { ...item, analysis } : item));
+        await AsyncStorage.setItem(COMPLAINTS_KEY, JSON.stringify(updated));
+      }
+    );
+  },
+
   async getCompliance(): Promise<ComplianceRecord[]> {
     return liveOrDemo(
       async () => (await apiClient.get<ComplianceRecord[]>('/api/compliance')).data,
@@ -197,6 +226,24 @@ export const tripService = {
     return liveOrDemo(
       async () => (await apiClient.get<AnalyticsSummary>('/api/analytics')).data,
       async () => demoAnalytics
+    );
+  },
+
+  async linkParentToStudent(studentIdOrCode: string, parentName: string): Promise<Student | null> {
+    const rawId = studentIdOrCode.trim().toLowerCase().replace('stu-', 'stu_');
+    const id = rawId.startsWith('stu_') ? rawId : `stu_${rawId}`;
+    return liveOrDemo(
+      async () => (await apiClient.patch<Student>(`/api/students/${id}/link`, { parentName })).data,
+      async () => {
+        const stored = await readJson<Student[]>(STUDENTS_KEY, demoStudents);
+        const index = stored.findIndex((s) => s.id.toLowerCase() === id);
+        if (index !== -1) {
+          stored[index].parentName = parentName;
+          await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify(stored));
+          return stored[index];
+        }
+        return null;
+      }
     );
   },
 };

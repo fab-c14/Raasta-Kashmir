@@ -11,7 +11,8 @@ export type TripEventType =
   | 'overspeed'
   | 'long_stop'
   | 'route_deviation'
-  | 'sos';
+  | 'sos'
+  | 'student_pickup';
 
 export interface TripEvent {
   id: string;
@@ -26,6 +27,8 @@ export interface TripPoint extends LatLng {
   timestamp: number;
   speedKmh: number;
 }
+
+import { SafetyReport, TripSummary } from './ai';
 
 export interface Trip {
   id: string;
@@ -42,6 +45,8 @@ export interface Trip {
   safetyScore: number;
   events: TripEvent[];
   path: TripPoint[];
+  aiSummary?: TripSummary;
+  aiReport?: SafetyReport;
 }
 
 export interface BusStop {

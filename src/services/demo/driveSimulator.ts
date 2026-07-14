@@ -1,5 +1,5 @@
-import { TripPoint } from '../../types/trip';
-import { DEMO_ROUTE_PATH } from '../../constants/demoRoute';
+import { LatLng, TripPoint } from '../../types/trip';
+import { DEMO_ROUTE_PATH_A } from '../../constants/demoRoute';
 import { distanceMeters, interpolate } from '../../utils/geo';
 
 const TICK_MS = 1000;
@@ -11,7 +11,8 @@ const TIME_LAPSE = 14;
  * driver demo always produces live telemetry — including one overspeed burst.
  */
 export const startDriveSimulation = (
-  onPoint: (point: TripPoint) => void
+  onPoint: (point: TripPoint) => void,
+  routePath: LatLng[] = DEMO_ROUTE_PATH_A
 ): (() => void) => {
   let segment = 0;
   let progress = 0;
@@ -25,9 +26,9 @@ export const startDriveSimulation = (
         : 30 + Math.sin(tick / 6) * 8 + Math.random() * 4;
 
     let meters = (speedKmh / 3.6) * (TICK_MS / 1000) * TIME_LAPSE;
-    while (meters > 0 && segment < DEMO_ROUTE_PATH.length - 1) {
-      const from = DEMO_ROUTE_PATH[segment];
-      const to = DEMO_ROUTE_PATH[segment + 1];
+    while (meters > 0 && segment < routePath.length - 1) {
+      const from = routePath[segment];
+      const to = routePath[segment + 1];
       const segmentLength = distanceMeters(from, to);
       const left = segmentLength * (1 - progress);
       if (meters < left) {
@@ -39,15 +40,15 @@ export const startDriveSimulation = (
         progress = 0;
       }
     }
-    if (segment >= DEMO_ROUTE_PATH.length - 1) {
+    if (segment >= routePath.length - 1) {
       segment = 0;
       progress = 0;
       tick = 0;
     }
 
     const location = interpolate(
-      DEMO_ROUTE_PATH[segment],
-      DEMO_ROUTE_PATH[Math.min(segment + 1, DEMO_ROUTE_PATH.length - 1)],
+      routePath[segment],
+      routePath[Math.min(segment + 1, routePath.length - 1)],
       progress
     );
     onPoint({ ...location, timestamp: Date.now(), speedKmh });

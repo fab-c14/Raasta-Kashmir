@@ -12,6 +12,7 @@ import { PrimaryButton } from '../../components/ui/PrimaryButton';
 import { AiInsightCard } from '../../components/AiInsightCard';
 import { SafetyScoreRing } from '../../components/SafetyScoreRing';
 import { aiService } from '../../services/aiService';
+import { tripService } from '../../services/tripService';
 import { SafetyReport, TripSummary } from '../../types/ai';
 import { AppStackParamList } from '../../navigation/types';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -32,13 +33,32 @@ const TripSummaryScreen: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
+
+    // Check if the trip already contains cached AI results
+    if (trip.aiSummary && trip.aiReport) {
+      setSummary(trip.aiSummary);
+      setReport(trip.aiReport);
+      return;
+    }
+
     Promise.all([aiService.getTripSummary(trip), aiService.getSafetyReport(trip)])
       .then(([tripSummary, safetyReport]) => {
         if (!mounted) return;
         setSummary(tripSummary);
         setReport(safetyReport);
+
+        // Update trip history with the AI summary/report so it is persistent
+        const updatedTrip = {
+          ...trip,
+          aiSummary: tripSummary,
+          aiReport: safetyReport,
+        };
+        tripService.saveTrip(updatedTrip).catch((err) => {
+          console.error('Failed to save AI report to trip history:', err);
+        });
       })
-      .catch(() => undefined);
+      .catch((err) => console.error('Failed to load AI assessments:', err));
+
     return () => {
       mounted = false;
     };

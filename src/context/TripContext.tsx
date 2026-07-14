@@ -1,7 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Trip, TripEvent, TripPoint } from '../types/trip';
+import { LatLng, Trip, TripEvent, TripPoint } from '../types/trip';
 import { UserProfile } from '../types/auth';
-import { DEMO_ROUTE_NAME, DEMO_ROUTE_PATH, DEMO_STOPS } from '../constants/demoRoute';
+import { Student } from '../types/fleet';
+import {
+  DEMO_ROUTE_NAME,
+  DEMO_ROUTE_PATH_A,
+  DEMO_ROUTE_PATH_B,
+  DEMO_STOPS,
+  SCHOOL_LOCATION,
+  DEMO_BUS_NO,
+} from '../constants/demoRoute';
 import { TripMonitor, computeSafetyScore } from '../utils/tripMonitor';
 import {
   bearingDegrees,
@@ -16,14 +24,25 @@ import { realtimeService } from '../services/realtime';
 import { tripService } from '../services/tripService';
 import { ETA_FALLBACK_SPEED_KMH } from '../constants/safety';
 
+export interface UpcomingPickup {
+  stopName: string;
+  studentNames: string[];
+  parentNotified: boolean;
+}
+
 interface TripContextType {
   trip: Trip | null;
   lastPoint: TripPoint | null;
   liveScore: number;
   isSimulatedGps: boolean;
-  startTrip: (profile: UserProfile) => Promise<void>;
+  upcomingPickup: UpcomingPickup | null;
+  simulationRoutePath: LatLng[];
+  busStudents: Student[];
+  startTrip: (profile: UserProfile, routePath?: LatLng[]) => Promise<void>;
   endTrip: () => Promise<Trip | null>;
   triggerSos: () => void;
+  notifyParentOfPickup: (customMessage?: string) => void;
+  setSimulationRoute: (routePath: LatLng[]) => void;
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined);
@@ -33,11 +52,19 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [lastPoint, setLastPoint] = useState<TripPoint | null>(null);
   const [liveScore, setLiveScore] = useState(100);
   const [isSimulatedGps, setIsSimulatedGps] = useState(false);
+  const [upcomingPickup, setUpcomingPickup] = useState<UpcomingPickup | null>(null);
+  const [simulationRoutePath, setSimulationRoutePath] = useState<LatLng[]>(DEMO_ROUTE_PATH_A);
+  const [busStudents, setBusStudents] = useState<Student[]>([]);
+  const [notifiedStops, setNotifiedStops] = useState<string[]>([]);
 
   const tripRef = useRef<Trip | null>(null);
   const monitorRef = useRef<TripMonitor | null>(null);
   const offDemoRouteRef = useRef(false);
   const stopWatchingRef = useRef<(() => void) | null>(null);
+
+  const upcomingPickupRef = useRef<UpcomingPickup | null>(null);
+  const notifiedStopsRef = useRef<string[]>([]);
+  const busStudentsRef = useRef<Student[]>([]);
 
   useEffect(() => () => stopWatchingRef.current?.(), []);
 
@@ -52,18 +79,53 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
     realtimeService.publishEvent(updated.busNo, event);
   }, []);
 
+  const endTrip = useCallback(async (): Promise<Trip | null> => {
+    stopWatchingRef.current?.();
+    stopWatchingRef.current = null;
+    const current = tripRef.current;
+    if (!current) return null;
+    const endedAt = Date.now();
+    const finished: Trip = {
+      ...current,
+      status: 'completed',
+      endedAt,
+      events: [
+        ...current.events,
+        { id: createId('evt'), type: 'trip_ended', message: 'Trip ended', timestamp: endedAt },
+      ],
+    };
+    tripRef.current = null;
+    setTrip(null);
+    setLastPoint(null);
+    upcomingPickupRef.current = null;
+    setUpcomingPickup(null);
+    try {
+      await tripService.saveTrip(finished);
+    } catch {
+      // History persistence must never block ending a trip.
+    }
+    return finished;
+  }, []);
+
   const handlePoint = useCallback(
     (point: TripPoint): void => {
       const current = tripRef.current;
       if (!current || current.status !== 'active') return;
+
+      // 1. Check auto-stop condition: if bus is near the school, end trip.
+      const distToSchool = distanceMeters(point, SCHOOL_LOCATION);
+      if (distToSchool < 150) {
+        endTrip();
+        return;
+      }
 
       // Assign the planned route on the first fix. When the driver is
       // testing far from the Srinagar demo route, route-deviation checks
       // are disabled — comparing real GPS to a route the bus was never on
       // would flag nonsense deviations.
       if (!monitorRef.current) {
-        offDemoRouteRef.current = distanceToPathMeters(point, DEMO_ROUTE_PATH) > 2000;
-        monitorRef.current = new TripMonitor(offDemoRouteRef.current ? [] : DEMO_ROUTE_PATH);
+        offDemoRouteRef.current = distanceToPathMeters(point, DEMO_ROUTE_PATH_A) > 2000;
+        monitorRef.current = new TripMonitor(offDemoRouteRef.current ? [] : DEMO_ROUTE_PATH_A);
       }
 
       const previous = current.path[current.path.length - 1];
@@ -82,7 +144,42 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       monitorRef.current?.addPoint(point).forEach(pushEvent);
 
-      const remainingM = remainingPathMeters(point, DEMO_ROUTE_PATH);
+      // 2. Check upcoming student pickups
+      let foundUpcoming = false;
+      const currentStudents = busStudentsRef.current;
+      const currentNotified = notifiedStopsRef.current;
+
+      for (const student of currentStudents) {
+        if (!student.pickupStop) continue;
+        const stop = DEMO_STOPS.find((s) => s.name === student.pickupStop);
+        if (!stop) continue;
+
+        const dist = distanceMeters(point, stop.location);
+        if (dist < 400 && !currentNotified.includes(stop.name)) {
+          foundUpcoming = true;
+          if (!upcomingPickupRef.current || upcomingPickupRef.current.stopName !== stop.name) {
+            const boardingStudents = currentStudents
+              .filter((s) => s.pickupStop === stop.name)
+              .map((s) => s.name);
+            const pickupData = {
+              stopName: stop.name,
+              studentNames: boardingStudents,
+              parentNotified: false,
+            };
+            upcomingPickupRef.current = pickupData;
+            setUpcomingPickup(pickupData);
+          }
+          break; // Show one upcoming stop at a time
+        }
+      }
+
+      // If we move away from the stop (>450m) and haven't notified, clear the alert
+      if (!foundUpcoming && upcomingPickupRef.current && !upcomingPickupRef.current.parentNotified) {
+        upcomingPickupRef.current = null;
+        setUpcomingPickup(null);
+      }
+
+      const remainingM = remainingPathMeters(point, DEMO_ROUTE_PATH_A);
       const etaSpeed = Math.max(point.speedKmh, ETA_FALLBACK_SPEED_KMH);
       const offRoute = offDemoRouteRef.current;
       realtimeService.publishDriverState({
@@ -103,12 +200,29 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatedAt: point.timestamp,
       });
     },
-    [pushEvent]
+    [pushEvent, endTrip]
   );
 
   const startTrip = useCallback(
-    async (profile: UserProfile): Promise<void> => {
+    async (profile: UserProfile, routePath: LatLng[] = simulationRoutePath): Promise<void> => {
       const startedAt = Date.now();
+
+      // Load students
+      try {
+        const students = await tripService.getStudents();
+        const filtered = students.filter((s) => s.busNo === (profile.vehicleNo ?? DEMO_BUS_NO));
+        busStudentsRef.current = filtered;
+        setBusStudents(filtered);
+      } catch (error) {
+        console.error('Failed to load students for trip', error);
+      }
+
+      // Reset notified stops and upcoming pickup
+      notifiedStopsRef.current = [];
+      setNotifiedStops([]);
+      upcomingPickupRef.current = null;
+      setUpcomingPickup(null);
+
       const newTrip: Trip = {
         id: createId('trip'),
         busNo: profile.vehicleNo ?? 'JK-01-A-1234',
@@ -143,37 +257,11 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
         stopWatchingRef.current = await locationService.watchPosition(handlePoint);
       } else {
         setIsSimulatedGps(true);
-        stopWatchingRef.current = startDriveSimulation(handlePoint);
+        stopWatchingRef.current = startDriveSimulation(handlePoint, routePath);
       }
     },
-    [handlePoint]
+    [handlePoint, simulationRoutePath]
   );
-
-  const endTrip = useCallback(async (): Promise<Trip | null> => {
-    stopWatchingRef.current?.();
-    stopWatchingRef.current = null;
-    const current = tripRef.current;
-    if (!current) return null;
-    const endedAt = Date.now();
-    const finished: Trip = {
-      ...current,
-      status: 'completed',
-      endedAt,
-      events: [
-        ...current.events,
-        { id: createId('evt'), type: 'trip_ended', message: 'Trip ended', timestamp: endedAt },
-      ],
-    };
-    tripRef.current = null;
-    setTrip(null);
-    setLastPoint(null);
-    try {
-      await tripService.saveTrip(finished);
-    } catch {
-      // History persistence must never block ending a trip.
-    }
-    return finished;
-  }, []);
 
   const triggerSos = useCallback((): void => {
     const current = tripRef.current;
@@ -191,9 +279,59 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTrip(updated);
   }, [pushEvent]);
 
+  const notifyParentOfPickup = useCallback((customMessage?: string): void => {
+    const currentPickup = upcomingPickupRef.current;
+    if (!currentPickup || !tripRef.current) return;
+
+    // 1. Mark as notified
+    const updatedPickup = { ...currentPickup, parentNotified: true };
+    upcomingPickupRef.current = updatedPickup;
+    setUpcomingPickup(updatedPickup);
+
+    // 2. Add to notified stops list
+    const updatedNotified = [...notifiedStopsRef.current, currentPickup.stopName];
+    notifiedStopsRef.current = updatedNotified;
+    setNotifiedStops(updatedNotified);
+
+    // 3. Emit a real-time event to parent / school alert feeds
+    const names = currentPickup.studentNames.join(', ');
+    const msg = customMessage || `Pickup confirmed: ${names} boarded at ${currentPickup.stopName}. Parent notified.`;
+    pushEvent({
+      id: createId('evt'),
+      type: 'student_pickup',
+      message: msg,
+      timestamp: Date.now(),
+      location: lastPoint ? { latitude: lastPoint.latitude, longitude: lastPoint.longitude } : undefined,
+    });
+  }, [pushEvent, lastPoint]);
+
+  const setSimulationRoute = useCallback(
+    (newRoute: LatLng[]) => {
+      setSimulationRoutePath(newRoute);
+      if (tripRef.current && tripRef.current.status === 'active' && isSimulatedGps) {
+        stopWatchingRef.current?.();
+        stopWatchingRef.current = startDriveSimulation(handlePoint, newRoute);
+      }
+    },
+    [isSimulatedGps, handlePoint]
+  );
+
   return (
     <TripContext.Provider
-      value={{ trip, lastPoint, liveScore, isSimulatedGps, startTrip, endTrip, triggerSos }}
+      value={{
+        trip,
+        lastPoint,
+        liveScore,
+        isSimulatedGps,
+        upcomingPickup,
+        simulationRoutePath,
+        busStudents,
+        startTrip,
+        endTrip,
+        triggerSos,
+        notifyParentOfPickup,
+        setSimulationRoute,
+      }}
     >
       {children}
     </TripContext.Provider>

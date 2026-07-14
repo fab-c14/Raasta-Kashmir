@@ -33,10 +33,17 @@ const ReportComplaintScreen: React.FC = () => {
     if (!user || text.trim().length < 10) return;
     setSubmitting(true);
     try {
-      await tripService.submitComplaint(user.assignedBusNo ?? DEMO_BUS_NO, user.name, text.trim());
       const result = await aiService.analyzeComplaint(text.trim());
       setAnalysis(result);
+      await tripService.submitComplaint(
+        user.assignedBusNo ?? DEMO_BUS_NO,
+        user.name,
+        text.trim(),
+        result
+      );
       setSubmitted(true);
+    } catch (err) {
+      console.error('Failed to submit complaint:', err);
     } finally {
       setSubmitting(false);
     }
