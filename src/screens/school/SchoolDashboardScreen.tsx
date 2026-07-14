@@ -109,8 +109,8 @@ const SchoolDashboardScreen: React.FC = () => {
                   </Text>
                 </View>
                 <Badge
-                  label={status === 'sos' ? 'SOS' : status === 'active' ? 'Live' : 'Idle'}
-                  tone={status === 'sos' ? 'danger' : status === 'active' ? 'success' : 'neutral'}
+                  label={status === 'sos' ? 'SOS' : status === 'active' ? 'Live' : status === 'completed' ? 'Done' : 'Idle'}
+                  tone={status === 'sos' ? 'danger' : status === 'active' ? 'success' : status === 'completed' ? 'info' : 'neutral'}
                 />
               </AppCard>
             </Animated.View>

@@ -1,15 +1,22 @@
 // Server-side demo bus: drives the Srinagar route so parent/school/RTO
 // dashboards are live the moment the server is up — no driver phone needed.
-// It yields automatically whenever a real driver publishes for the same bus.
+// Lifecycle mirrors a real school bus: outbound trip → completed + dwell at
+// the school → return trip → dwell → repeat. Yields to real drivers.
 
 import { ROUTE_POINTS, STOP_INDICES } from './routeData.js';
 
 const BUS_NO = 'JK-01-A-1234';
 const DRIVER = 'Jehangir Dar';
-// Real road-following polyline shared with the app (see routeData.js).
-const ROUTE = ROUTE_POINTS;
-const STOPS = STOP_INDICES.map((stop) => ({ name: stop.name, i: stop.index }));
 const TIME_LAPSE = 14;
+/** Seconds the bus waits at each terminal between trips. */
+const DWELL_TICKS = 40;
+
+const ROUTE_OUT = ROUTE_POINTS;
+const ROUTE_RET = [...ROUTE_POINTS].reverse();
+const STOPS_OUT = STOP_INDICES.map((stop) => ({ name: stop.name, i: stop.index }));
+const STOPS_RET = [...STOP_INDICES]
+  .map((stop) => ({ name: stop.name, i: ROUTE_POINTS.length - 1 - stop.index }))
+  .sort((a, b) => a.i - b.i);
 
 const toRad = (d) => (d * Math.PI) / 180;
 const distM = (a, b) => {
@@ -31,10 +38,12 @@ const bearing = (a, b) => {
 };
 
 export function startDemoBus(io, store) {
+  let outbound = true;
   let segment = 0;
   let progress = 0;
   let tick = 0;
   let pauseTicks = 0;
+  let dwellTicks = 0;
   let tripId = `trip_${Date.now().toString(36)}`;
   let lastOverspeedAt = 0;
   let longStopReported = false;
@@ -52,13 +61,56 @@ export function startDemoBus(io, store) {
     io.to(`bus:${BUS_NO}`).emit('bus:event', event);
   };
 
+  const publish = (state) => {
+    store.liveBuses.set(BUS_NO, state);
+    io.to(`bus:${BUS_NO}`).emit('bus:state', state);
+  };
+
   setInterval(() => {
     // Yield to a real driver phone publishing for this bus.
     const current = store.liveBuses.get(BUS_NO);
     if (current && !current.isDemo && Date.now() - current.updatedAt < 8000) return;
 
+    const route = outbound ? ROUTE_OUT : ROUTE_RET;
+    const stops = outbound ? STOPS_OUT : STOPS_RET;
+    const terminal = stops[stops.length - 1].name;
+
+    // Dwelling at a terminal between trips.
+    if (dwellTicks > 0) {
+      dwellTicks -= 1;
+      publish({
+        busNo: BUS_NO,
+        tripId,
+        driverName: DRIVER,
+        status: 'completed',
+        location: route[route.length - 1],
+        heading: 0,
+        speedKmh: 0,
+        etaMinutes: 0,
+        nextStop: terminal,
+        updatedAt: Date.now(),
+        isDemo: true,
+      });
+      if (dwellTicks === 0) {
+        // Turn around and start the next trip.
+        outbound = !outbound;
+        segment = 0;
+        progress = 0;
+        tick = 0;
+        longStopReported = false;
+        tripId = `trip_${Date.now().toString(36)}`;
+        emitEvent(
+          'trip_started',
+          outbound ? 'Morning trip started from Lal Chowk' : 'Return trip started from the school',
+          (outbound ? ROUTE_OUT : ROUTE_RET)[0],
+          0
+        );
+      }
+      return;
+    }
+
     tick += 1;
-    if (segment === 45 && pauseTicks === 0 && progress < 0.1) pauseTicks = 100;
+    if (outbound && segment === 45 && pauseTicks === 0 && progress < 0.1) pauseTicks = 100;
     if (pauseTicks > 0) pauseTicks -= 1;
 
     const speedKmh = pauseTicks > 0
@@ -68,8 +120,8 @@ export function startDemoBus(io, store) {
         : 30 + Math.sin(tick / 7) * 8 + Math.random() * 4;
 
     let meters = (speedKmh / 3.6) * TIME_LAPSE;
-    while (meters > 0 && segment < ROUTE.length - 1) {
-      const len = distM(ROUTE[segment], ROUTE[segment + 1]);
+    while (meters > 0 && segment < route.length - 1) {
+      const len = distM(route[segment], route[segment + 1]);
       const left = len * (1 - progress);
       if (meters < left) {
         progress += meters / len;
@@ -80,36 +132,34 @@ export function startDemoBus(io, store) {
         progress = 0;
       }
     }
-    if (segment >= ROUTE.length - 1) {
-      segment = 0;
-      progress = 0;
-      tick = 0;
-      longStopReported = false;
-      tripId = `trip_${Date.now().toString(36)}`;
+
+    // Arrived at the terminal: complete the trip and dwell.
+    if (segment >= route.length - 1) {
+      dwellTicks = DWELL_TICKS;
+      emitEvent('trip_ended', `Trip completed at ${terminal}`, route[route.length - 1], 0);
+      return;
     }
 
-    const next = Math.min(segment + 1, ROUTE.length - 1);
-    const location = lerp(ROUTE[segment], ROUTE[next], progress);
-    let remaining = distM(location, ROUTE[next]);
-    for (let i = next; i < ROUTE.length - 1; i += 1) remaining += distM(ROUTE[i], ROUTE[i + 1]);
-    const nextStop = (STOPS.find((s) => s.i > segment) ?? STOPS.at(-1)).name;
+    const next = Math.min(segment + 1, route.length - 1);
+    const location = lerp(route[segment], route[next], progress);
+    let remaining = distM(location, route[next]);
+    for (let i = next; i < route.length - 1; i += 1) remaining += distM(route[i], route[i + 1]);
+    const nextStop = (stops.find((s) => s.i > segment) ?? stops[stops.length - 1]).name;
     const etaSpeed = Math.max(speedKmh, 24) * TIME_LAPSE;
 
-    const state = {
+    publish({
       busNo: BUS_NO,
       tripId,
       driverName: DRIVER,
       status: 'active',
       location,
-      heading: bearing(ROUTE[segment], ROUTE[next]),
+      heading: bearing(route[segment], route[next]),
       speedKmh,
       etaMinutes: Math.max(1, Math.round(remaining / 1000 / (etaSpeed / 60))),
       nextStop,
       updatedAt: Date.now(),
       isDemo: true,
-    };
-    store.liveBuses.set(BUS_NO, state);
-    io.to(`bus:${BUS_NO}`).emit('bus:state', state);
+    });
 
     if (speedKmh > 50 && Date.now() - lastOverspeedAt > 30000) {
       lastOverspeedAt = Date.now();
@@ -121,5 +171,5 @@ export function startDemoBus(io, store) {
     }
   }, 1000);
 
-  console.log(`  Demo bus ${BUS_NO} driving the Srinagar route (yields to real drivers)`);
+  console.log(`  Demo bus ${BUS_NO} driving the Srinagar route (out-and-back, yields to real drivers)`);
 }

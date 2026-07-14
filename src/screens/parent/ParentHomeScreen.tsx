@@ -58,9 +58,22 @@ const ParentHomeScreen: React.FC = () => {
     AsyncStorage.setItem(PICKUP_KEY, name).catch(() => undefined);
   };
 
-  const statusTone = bus?.status === 'sos' ? 'danger' : bus?.status === 'active' ? 'success' : 'neutral';
+  const statusTone =
+    bus?.status === 'sos'
+      ? 'danger'
+      : bus?.status === 'active'
+        ? 'success'
+        : bus?.status === 'completed'
+          ? 'info'
+          : 'neutral';
   const statusLabel =
-    bus?.status === 'sos' ? 'EMERGENCY' : bus?.status === 'active' ? 'On the way' : 'Not started';
+    bus?.status === 'sos'
+      ? 'EMERGENCY'
+      : bus?.status === 'active'
+        ? 'On the way'
+        : bus?.status === 'completed'
+          ? 'Trip completed'
+          : 'Not started';
   const showProximityBanner =
     proximity.phase === 'approaching' || proximity.phase === 'imminent' || proximity.phase === 'arrived';
 
