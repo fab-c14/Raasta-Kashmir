@@ -4,6 +4,7 @@ import { RoleTabs } from './RoleTabs';
 import TripSummaryScreen from '../screens/driver/TripSummaryScreen';
 import TripDetailScreen from '../screens/shared/TripDetailScreen';
 import ReportComplaintScreen from '../screens/parent/ReportComplaintScreen';
+import FullMapScreen from '../screens/shared/FullMapScreen';
 import { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -14,5 +15,6 @@ export const AppNavigator: React.FC = () => (
     <Stack.Screen name="TripSummary" component={TripSummaryScreen} />
     <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ animation: 'slide_from_right' }} />
     <Stack.Screen name="ReportComplaint" component={ReportComplaintScreen} options={{ animation: 'slide_from_right' }} />
+    <Stack.Screen name="FullMap" component={FullMapScreen} options={{ animation: 'fade' }} />
   </Stack.Navigator>
 );

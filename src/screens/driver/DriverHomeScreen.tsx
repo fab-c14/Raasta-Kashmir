@@ -18,7 +18,7 @@ import { useTrip } from '../../context/TripContext';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
 import { SPEED_LIMIT_KMH } from '../../constants/safety';
-import { DEMO_ROUTE_NAME } from '../../constants/demoRoute';
+import { DEMO_BUS_NO, DEMO_ROUTE_NAME } from '../../constants/demoRoute';
 import { AppStackParamList } from '../../navigation/types';
 import { formatKm } from '../../utils/format';
 
@@ -61,7 +61,12 @@ const DriverHomeScreen: React.FC = () => {
       />
 
       <Animated.View entering={FadeInDown.duration(400)}>
-        <LiveMap busLocation={lastPoint} height={240} followBus={trip !== null} />
+        <LiveMap
+          busLocation={lastPoint}
+          height={240}
+          followBus={trip !== null}
+          onExpand={() => navigation.navigate('FullMap', { busNo: user?.vehicleNo ?? DEMO_BUS_NO })}
+        />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(80).duration(400)} style={[styles.statsRow, { marginTop: spacing.md }]}>

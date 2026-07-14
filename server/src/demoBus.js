@@ -2,20 +2,13 @@
 // dashboards are live the moment the server is up — no driver phone needed.
 // It yields automatically whenever a real driver publishes for the same bus.
 
+import { ROUTE_POINTS, STOP_INDICES } from './routeData.js';
+
 const BUS_NO = 'JK-01-A-1234';
 const DRIVER = 'Jehangir Dar';
-// Must stay in sync with src/constants/demoRoute.ts (old-city corridor,
-// west of Dal Lake, so the polyline never crosses water).
-const ROUTE = [
-  [34.0715, 74.809], [34.0762, 74.8104], [34.0815, 74.8121], [34.0866, 74.8131],
-  [34.092, 74.8168], [34.0968, 74.8202], [34.1023, 74.8244], [34.108, 74.8288],
-  [34.1136, 74.8318], [34.1192, 74.8345], [34.1246, 74.8377], [34.1284, 74.841],
-  [34.13, 74.8432],
-].map(([latitude, longitude]) => ({ latitude, longitude }));
-const STOPS = [
-  { name: 'Lal Chowk', i: 0 }, { name: 'Nowhatta', i: 3 }, { name: 'Khanyar', i: 4 },
-  { name: 'Hawal', i: 5 }, { name: 'Naseem Bagh', i: 10 }, { name: 'Kashmir Valley School', i: 12 },
-];
+// Real road-following polyline shared with the app (see routeData.js).
+const ROUTE = ROUTE_POINTS;
+const STOPS = STOP_INDICES.map((stop) => ({ name: stop.name, i: stop.index }));
 const TIME_LAPSE = 14;
 
 const toRad = (d) => (d * Math.PI) / 180;
@@ -65,7 +58,7 @@ export function startDemoBus(io, store) {
     if (current && !current.isDemo && Date.now() - current.updatedAt < 8000) return;
 
     tick += 1;
-    if (segment === 6 && pauseTicks === 0 && progress < 0.1) pauseTicks = 100;
+    if (segment === 45 && pauseTicks === 0 && progress < 0.1) pauseTicks = 100;
     if (pauseTicks > 0) pauseTicks -= 1;
 
     const speedKmh = pauseTicks > 0

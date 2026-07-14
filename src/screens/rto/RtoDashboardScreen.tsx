@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BadgeCheck, Bus, School, ShieldAlert } from 'lucide-react-native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
@@ -17,9 +19,11 @@ import { tripService } from '../../services/tripService';
 import { AnalyticsSummary, ComplianceRecord } from '../../types/fleet';
 import { useBusTracking } from '../../hooks/useBusTracking';
 import { DEMO_BUS_NO } from '../../constants/demoRoute';
+import { AppStackParamList } from '../../navigation/types';
 
 const RtoDashboardScreen: React.FC = () => {
   const { user } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { colors, spacing } = useAppTheme();
   const [records, setRecords] = useState<ComplianceRecord[] | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
@@ -48,7 +52,12 @@ const RtoDashboardScreen: React.FC = () => {
       <ScreenHeader title="Transport Authority" subtitle={`RTO ${user?.rtoCode ?? 'JK-01'} · Srinagar`} showLogout />
 
       <Animated.View entering={FadeInDown.duration(400)}>
-        <LiveMap busLocation={liveBus?.location ?? null} heading={liveBus?.heading ?? 0} height={210} />
+        <LiveMap
+          busLocation={liveBus?.location ?? null}
+          heading={liveBus?.heading ?? 0}
+          height={210}
+          onExpand={() => navigation.navigate('FullMap', { busNo: DEMO_BUS_NO })}
+        />
         {liveBus ? (
           <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 6 }]} numberOfLines={1}>
             Live: {DEMO_BUS_NO} · {Math.round(liveBus.speedKmh)} km/h · next stop {liveBus.nextStop}

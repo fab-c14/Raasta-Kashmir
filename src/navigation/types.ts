@@ -11,6 +11,7 @@ export type AppStackParamList = {
   TripSummary: { trip: Trip };
   TripDetail: { trip: Trip };
   ReportComplaint: undefined;
+  FullMap: { busNo: string; pickupStopName?: string };
 };
 
 export type DriverTabParamList = {
