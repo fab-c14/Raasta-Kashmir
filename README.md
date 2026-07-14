@@ -1,7 +1,7 @@
 # Raasta Kashmir
 ### **Every School Trip. Safe. Smart. Connected.**
 
-Winner-grade AI-powered School Transport Safety Platform for Parents, Schools, Bus Drivers, and Transport Authorities (RTO) — built to run on **only the driver's phone**. No expensive IoT, no CCTV, no extra hardware.
+AI-powered School Transport Safety Platform for Parents, Schools, Bus Drivers, and Transport Authorities (RTO) — built to run on **only the driver's phone**. No expensive IoT, no CCTV, no extra hardware.
 
 ---
 
@@ -125,3 +125,12 @@ server/         Node.js + Express + Socket.IO + MongoDB + Gemini API
 *   **🏎️ IMU-Based Crash and Rash Driving Detection:** Access the smartphone's built-in accelerometer and gyroscope sensors to measure high G-force events (sudden impacts, harsh braking, or aggressive cornering) and trigger instant automated SOS alerts.
 *   **🗺️ Smart Dynamic Route Optimizations:** AI-based routing engine that adjusts stops in real time according to weather advisories, school hours, and live traffic congestion.
 *   **🎫 Mobile RFID/NFC Boarding:** Leverage the phone's native NFC sensor to allow students to scan their student ID card against the driver's phone, automating boarding checks with zero additional bus modifications.
+
+---
+
+## 👥 Contributors
+
+*   **[Fabs](https://fabsfolio.me)**
+    *   💻 Self-taught Full Stack Developer & Programmer (MERN Stack)
+    *   🎓 BCA graduate (Cluster University Srinagar) & pursuing Masters at Kashmir University (UOK)
+    *   📚 Specialized in deep learning neural networking, full-stack AI/ML application development, and open-source contributions.
