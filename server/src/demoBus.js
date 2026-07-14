@@ -44,6 +44,8 @@ export function startDemoBus(io, store) {
   let tick = 0;
   let pauseTicks = 0;
   let dwellTicks = 0;
+  let boardingTicks = 0;
+  let boardedStops = new Set();
   let tripId = `trip_${Date.now().toString(36)}`;
   let lastOverspeedAt = 0;
   let longStopReported = false;
@@ -98,6 +100,7 @@ export function startDemoBus(io, store) {
         progress = 0;
         tick = 0;
         longStopReported = false;
+        boardedStops = new Set();
         tripId = `trip_${Date.now().toString(36)}`;
         emitEvent(
           'trip_started',
@@ -106,6 +109,14 @@ export function startDemoBus(io, store) {
           0
         );
       }
+      return;
+    }
+
+    // Briefly halted at a stop to board students.
+    if (boardingTicks > 0) {
+      boardingTicks -= 1;
+      const prev = store.liveBuses.get(BUS_NO);
+      if (prev) publish({ ...prev, speedKmh: 0, updatedAt: Date.now() });
       return;
     }
 
@@ -138,6 +149,15 @@ export function startDemoBus(io, store) {
       dwellTicks = DWELL_TICKS;
       emitEvent('trip_ended', `Trip completed at ${terminal}`, route[route.length - 1], 0);
       return;
+    }
+
+    // Passing a pickup stop: halt for a few seconds to board students.
+    const boardingStop = stops.find(
+      (s) => s.i > 0 && s.i < route.length - 1 && s.i <= segment && !boardedStops.has(s.name)
+    );
+    if (boardingStop) {
+      boardedStops.add(boardingStop.name);
+      boardingTicks = 7;
     }
 
     const next = Math.min(segment + 1, route.length - 1);

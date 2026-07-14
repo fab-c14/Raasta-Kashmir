@@ -24,6 +24,23 @@ const FullMapScreen: React.FC = () => {
   const { bus } = useBusTracking(params.busNo);
   const pickup = DEMO_STOPS.find((stop) => stop.name === params.pickupStopName);
   const [idleBuses, setIdleBuses] = useState<{ busNo: string; location: LatLng }[]>([]);
+  const [stopCounts, setStopCounts] = useState<Record<string, number>>({});
+
+  // Pill on each stop = how many students of this bus board there.
+  useEffect(() => {
+    tripService
+      .getStudents()
+      .then((students) => {
+        const counts: Record<string, number> = {};
+        students
+          .filter((student) => student.busNo === params.busNo && student.pickupStop)
+          .forEach((student) => {
+            counts[student.pickupStop as string] = (counts[student.pickupStop as string] ?? 0) + 1;
+          });
+        setStopCounts(counts);
+      })
+      .catch(() => setStopCounts({}));
+  }, [params.busNo]);
 
   // Other fleet buses are parked at the school; spread them slightly so the
   // markers don't stack on one point.
@@ -55,6 +72,7 @@ const FullMapScreen: React.FC = () => {
           heading={bus?.heading ?? 0}
           pickupLocation={pickup?.location ?? null}
           idleBuses={idleBuses}
+          stopStudentCounts={stopCounts}
         />
         <TouchableOpacity
           accessibilityRole="button"

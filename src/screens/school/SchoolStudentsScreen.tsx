@@ -15,6 +15,10 @@ import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
 import { tripService } from '../../services/tripService';
 import { FleetBus, Student } from '../../types/fleet';
+import { DEMO_STOPS } from '../../constants/demoRoute';
+
+// The final stop is the school itself — not a pickup point.
+const PICKUP_STOPS = DEMO_STOPS.slice(0, -1).map((stop) => stop.name);
 
 /** School assigns students (by class) to buses; grouped view per bus. */
 const SchoolStudentsScreen: React.FC = () => {
@@ -24,6 +28,7 @@ const SchoolStudentsScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [className, setClassName] = useState('');
   const [busNo, setBusNo] = useState<string | null>(null);
+  const [pickupStop, setPickupStop] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async (): Promise<void> => {
@@ -40,10 +45,15 @@ const SchoolStudentsScreen: React.FC = () => {
   );
 
   const handleAdd = async (): Promise<void> => {
-    if (!name.trim() || !className.trim() || !busNo) return;
+    if (!name.trim() || !className.trim() || !busNo || !pickupStop) return;
     setSaving(true);
     try {
-      const student = await tripService.addStudent(name.trim(), className.trim(), busNo);
+      const student = await tripService.addStudent(
+        name.trim(),
+        className.trim(),
+        busNo,
+        pickupStop
+      );
       setStudents((current) => [...(current ?? []), student]);
       setName('');
       setClassName('');
@@ -121,11 +131,38 @@ const SchoolStudentsScreen: React.FC = () => {
             );
           })}
         </ScrollView>
+        <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 10, marginBottom: 6 }]}>
+          Pickup stop
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {PICKUP_STOPS.map((stop) => {
+            const active = stop === pickupStop;
+            return (
+              <TouchableOpacity
+                key={stop}
+                accessibilityRole="button"
+                accessibilityLabel={`Pickup at ${stop}`}
+                onPress={() => setPickupStop(stop)}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: active ? colors.primary : colors.card,
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <Text style={[typography.buttonMedium, { color: active ? '#FFFFFF' : colors.textPrimary }]}>
+                  {stop}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
         <PrimaryButton
           label="Add student"
           onPress={handleAdd}
           loading={saving}
-          disabled={!name.trim() || !className.trim() || !busNo}
+          disabled={!name.trim() || !className.trim() || !busNo || !pickupStop}
           style={{ marginTop: spacing.md }}
         />
       </AppCard>
@@ -153,7 +190,8 @@ const SchoolStudentsScreen: React.FC = () => {
                       </Text>
                       <Text style={[typography.bodySmall, { color: colors.textSecondary }]} numberOfLines={1}>
                         {student.className}
-                        {student.parentName ? ` · Parent: ${student.parentName}` : ''}
+                        {student.pickupStop ? ` · Pickup: ${student.pickupStop}` : ''}
+                        {student.parentName ? ` · ${student.parentName}` : ''}
                       </Text>
                     </View>
                     <TouchableOpacity

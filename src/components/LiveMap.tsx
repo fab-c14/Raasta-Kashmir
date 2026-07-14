@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Details, Marker, Polyline, Region } from 'react-native-maps';
 import { Bus, MapPin, Maximize2 } from 'lucide-react-native';
 import { LatLng } from '../types/trip';
@@ -16,6 +16,8 @@ interface LiveMapProps {
   pickupLocation?: LatLng | null;
   /** Parked buses to show as muted markers (full-map fleet view). */
   idleBuses?: { busNo: string; location: LatLng }[];
+  /** Students boarding at each stop, keyed by stop name. */
+  stopStudentCounts?: Record<string, number>;
   /** Shows an expand button that opens the full-screen map. */
   onExpand?: () => void;
 }
@@ -31,6 +33,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   followBus = true,
   pickupLocation = null,
   idleBuses = [],
+  stopStudentCounts,
   onExpand,
 }) => {
   const { colors, roundness, isDark, shadows } = useAppTheme();
@@ -82,6 +85,22 @@ export const LiveMap: React.FC<LiveMapProps> = ({
             fillColor={`${colors.primary}33`}
           />
         ))}
+        {stopStudentCounts
+          ? DEMO_STOPS.filter((stop) => (stopStudentCounts[stop.name] ?? 0) > 0).map((stop) => (
+              <Marker
+                key={`count-${stop.name}`}
+                coordinate={stop.location}
+                anchor={{ x: 0.5, y: 2 }}
+                title={`${stop.name}: ${stopStudentCounts[stop.name]} student${stopStudentCounts[stop.name] > 1 ? 's' : ''} board here`}
+              >
+                <View style={[styles.countPill, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.countText, { color: colors.textPrimary }]}>
+                    {stopStudentCounts[stop.name]}
+                  </Text>
+                </View>
+              </Marker>
+            ))
+          : null}
         {pickupLocation ? (
           <Marker coordinate={pickupLocation} anchor={{ x: 0.5, y: 1 }}>
             <View style={[styles.pickupMarker, { backgroundColor: colors.warning }]}>
@@ -132,6 +151,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+  },
+  countPill: {
+    minWidth: 24,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  countText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 11,
   },
   idleMarker: {
     width: 26,

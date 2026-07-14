@@ -132,11 +132,17 @@ export const tripService = {
     );
   },
 
-  async addStudent(name: string, className: string, busNo: string): Promise<Student> {
-    const student: Student = { id: createId('stu'), name, className, busNo };
+  async addStudent(
+    name: string,
+    className: string,
+    busNo: string,
+    pickupStop?: string
+  ): Promise<Student> {
+    const student: Student = { id: createId('stu'), name, className, busNo, pickupStop };
     return liveOrDemo(
       async () =>
-        (await apiClient.post<Student>('/api/students', { name, className, busNo })).data,
+        (await apiClient.post<Student>('/api/students', { name, className, busNo, pickupStop }))
+          .data,
       async () => {
         const stored = await readJson<Student[]>(STUDENTS_KEY, demoStudents);
         await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify([...stored, student]));

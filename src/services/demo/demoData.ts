@@ -71,11 +71,11 @@ export const demoCompliance: ComplianceRecord[] = [
 ];
 
 export const demoStudents: Student[] = [
-  { id: 'stu_1', name: 'Ayaan Bhat', className: 'Class 5-A', busNo: DEMO_BUS_NO, parentName: 'Amina Shah' },
-  { id: 'stu_2', name: 'Zoya Mir', className: 'Class 3-B', busNo: DEMO_BUS_NO, parentName: 'Shabnam Mir' },
-  { id: 'stu_3', name: 'Rehan Wani', className: 'Class 7-A', busNo: 'JK-01-B-4472', parentName: 'Rafiq Wani' },
-  { id: 'stu_4', name: 'Mehak Lone', className: 'Class 4-C', busNo: 'JK-01-B-4472', parentName: 'Sajad Lone' },
-  { id: 'stu_5', name: 'Ibrahim Dar', className: 'Class 6-B', busNo: 'JK-01-D-2296', parentName: 'Imran Bhat' },
+  { id: 'stu_1', name: 'Ayaan Bhat', className: 'Class 5-A', busNo: DEMO_BUS_NO, parentName: 'Amina Shah', pickupStop: 'Lal Chowk' },
+  { id: 'stu_2', name: 'Zoya Mir', className: 'Class 3-B', busNo: DEMO_BUS_NO, parentName: 'Shabnam Mir', pickupStop: 'Khanyar' },
+  { id: 'stu_3', name: 'Rehan Wani', className: 'Class 7-A', busNo: 'JK-01-B-4472', parentName: 'Rafiq Wani', pickupStop: 'Hawal' },
+  { id: 'stu_4', name: 'Mehak Lone', className: 'Class 4-C', busNo: 'JK-01-B-4472', parentName: 'Sajad Lone', pickupStop: 'Nowhatta' },
+  { id: 'stu_5', name: 'Ibrahim Dar', className: 'Class 6-B', busNo: 'JK-01-D-2296', parentName: 'Imran Bhat', pickupStop: 'Naseem Bagh' },
 ];
 
 export const demoViolations: ViolationRecord[] = [

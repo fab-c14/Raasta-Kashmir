@@ -26,6 +26,8 @@ export interface Student {
   className: string;
   busNo: string;
   parentName?: string;
+  /** Stop where this student boards the bus. */
+  pickupStop?: string;
 }
 
 export type ComplaintStatus = 'open' | 'reviewing' | 'resolved';

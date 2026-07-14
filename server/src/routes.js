@@ -50,7 +50,7 @@ export function registerRoutes(app, store) {
   app.get('/api/students', wrap(async (_req, res) => res.json(await store.getStudents())));
 
   app.post('/api/students', wrap(async (req, res) => {
-    const { name, className, busNo, parentName } = req.body;
+    const { name, className, busNo, parentName, pickupStop } = req.body;
     if (!name || !className || !busNo) {
       res.status(400).json({ message: 'name, className and busNo are required' });
       return;
@@ -61,6 +61,7 @@ export function registerRoutes(app, store) {
       className,
       busNo,
       parentName: parentName ?? '',
+      pickupStop: pickupStop ?? '',
     };
     await store.addStudent(student);
     res.status(201).json(student);

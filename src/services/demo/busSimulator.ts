@@ -49,6 +49,10 @@ class BusSimulator {
 
   private dwellTicks = 0;
 
+  private boardingTicks = 0;
+
+  private boardedStops = new Set<string>();
+
   private state: BusLiveState = this.buildInitialState();
 
   private recentEvents: TripEvent[] = [];
@@ -139,6 +143,7 @@ class BusSimulator {
         this.segment = 0;
         this.progress = 0;
         this.tick = 0;
+        this.boardedStops = new Set();
         this.monitor = new TripMonitor(DEMO_ROUTE_PATH);
         this.state = { ...this.state, tripId: createId('trip') };
         this.publishEvent({
@@ -150,6 +155,14 @@ class BusSimulator {
           timestamp: Date.now(),
         });
       }
+      this.stateListeners.forEach((listener) => listener(this.state));
+      return;
+    }
+
+    // Briefly halted at a stop to board students.
+    if (this.boardingTicks > 0) {
+      this.boardingTicks -= 1;
+      this.state = { ...this.state, speedKmh: 0, updatedAt: Date.now() };
       this.stateListeners.forEach((listener) => listener(this.state));
       return;
     }
@@ -174,6 +187,21 @@ class BusSimulator {
         location: route[route.length - 1],
       });
       return;
+    }
+
+    // Passing a pickup stop: halt for a few seconds to board students.
+    const boardingStop = stops.find(
+      (stop) =>
+        stop.name !== terminal &&
+        !this.boardedStops.has(stop.name) &&
+        distanceMeters(
+          interpolate(route[this.segment], route[Math.min(this.segment + 1, route.length - 1)], this.progress),
+          stop.location
+        ) < 120
+    );
+    if (boardingStop) {
+      this.boardedStops.add(boardingStop.name);
+      this.boardingTicks = 7;
     }
 
     const next = Math.min(this.segment + 1, route.length - 1);
