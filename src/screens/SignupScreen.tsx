@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  KeyboardAvoidingView, 
-  Platform, 
-  ScrollView, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  StatusBar 
+import {
+  StyleSheet,
+  Text,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../hooks/useAppTheme';

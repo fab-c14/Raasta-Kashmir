@@ -1,5 +1,15 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import * as firebaseAuth from 'firebase/auth';
+import { initializeAuth, getAuth, Auth, Persistence } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Present at runtime in Firebase's React Native entrypoint, but missing from
+// the public typings (firebase/firebase-js-sdk#7615).
+const getReactNativePersistence = (
+  firebaseAuth as unknown as {
+    getReactNativePersistence: (storage: typeof AsyncStorage) => Persistence;
+  }
+).getReactNativePersistence;
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -10,20 +20,27 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Check if credentials are present
 const hasCredentials = !!(
   firebaseConfig.apiKey &&
   firebaseConfig.projectId &&
   firebaseConfig.appId
 );
 
-let app;
-let auth: any = null;
+let app: FirebaseApp | undefined;
+let authInstance: Auth | null = null;
 
 if (hasCredentials) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    auth = getAuth(app);
+    try {
+      // AsyncStorage persistence keeps the Firebase session across restarts.
+      authInstance = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
+    } catch {
+      // initializeAuth throws if already initialized (fast refresh) — reuse it.
+      authInstance = getAuth(app);
+    }
     console.log('Firebase initialized successfully.');
   } catch (error) {
     console.error('Failed to initialize Firebase, falling back to mock mode:', error);
@@ -32,6 +49,7 @@ if (hasCredentials) {
   console.warn('Firebase environment variables missing. Running in Mock Authentication mode.');
 }
 
-export const isMockFirebase = !auth;
-export { auth };
+export const isMockFirebase = !authInstance;
+/** Only valid when isMockFirebase is false — every caller checks that first. */
+export const auth = authInstance as Auth;
 export default app;
