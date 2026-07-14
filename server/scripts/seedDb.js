@@ -27,6 +27,10 @@ const complaintSchema = new mongoose.Schema(
   { id: String },
   { strict: false, collection: 'complaints', id: false }
 );
+const studentSchema = new mongoose.Schema(
+  { id: String, busNo: String },
+  { strict: false, collection: 'students', id: false }
+);
 
 const id = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -79,15 +83,19 @@ async function main() {
   await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
   const Trip = mongoose.model('Trip', tripSchema);
   const Complaint = mongoose.model('Complaint', complaintSchema);
+  const Student = mongoose.model('Student', studentSchema);
 
   // Remove seeded docs and any legacy documents saved without an id
   // (created before the schema declared `id` explicitly).
   await Trip.deleteMany({ $or: [{ seeded: true }, { id: { $exists: false } }] });
   await Complaint.deleteMany({ $or: [{ seeded: true }, { id: { $exists: false } }] });
+  await Student.deleteMany({});
+
   const trips = await Trip.insertMany(buildTrips());
   const complaints = await Complaint.insertMany(buildComplaints());
+  const students = await Student.insertMany(seed.students);
 
-  console.log(`Seeded ${trips.length} trips and ${complaints.length} complaints into MongoDB.`);
+  console.log(`Seeded ${trips.length} trips, ${complaints.length} complaints, and ${students.length} students into MongoDB.`);
   console.log(`Database: ${mongoose.connection.name}`);
   await mongoose.disconnect();
 }

@@ -63,17 +63,24 @@ const ParentHomeScreen: React.FC = () => {
     setIsLinking(true);
     setLinkError(null);
     try {
-      const code = linkCode.trim();
+      const code = linkCode.trim().toLowerCase();
       const allStudents = await tripService.getStudents();
-      const formattedCode = code.toLowerCase().replace('stu-', 'stu_');
+      const formattedCode = code.replace('stu-', 'stu_');
       const targetCode = formattedCode.startsWith('stu_') ? formattedCode : `stu_${formattedCode}`;
 
-      const matched = allStudents.find(
-        (s) => s.id.toLowerCase() === targetCode || s.id.toLowerCase() === code.toLowerCase()
-      );
+      const matched = allStudents.find((s) => {
+        const studentName = s.name.toLowerCase();
+        return (
+          s.id.toLowerCase() === code ||
+          targetCode === code ||
+          s.id.replace('stu_', 'stu-').toLowerCase() === code ||
+          studentName.includes(code) ||
+          code.includes(studentName)
+        );
+      });
 
       if (!matched) {
-        setLinkError('Invalid invite code. Try STU-1, STU-2 or STU-arman.');
+        setLinkError('Invalid invite code. Try STU-2, Zoya, or Arman.');
         setIsLinking(false);
         return;
       }

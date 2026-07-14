@@ -91,16 +91,21 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
         const matched = allStudents.filter((s) => {
           const rawId = s.id.toLowerCase().replace('stu-', 'stu_');
           const normalized = rawId.startsWith('stu_') ? rawId : `stu_${rawId}`;
-          return (
-            codes.includes(s.id.toLowerCase()) ||
-            codes.includes(normalized) ||
-            codes.includes(s.id.replace('stu_', 'stu-').toLowerCase())
-          );
+          const studentName = s.name.toLowerCase();
+          return codes.some((code) => {
+            return (
+              s.id.toLowerCase() === code ||
+              normalized === code ||
+              s.id.replace('stu_', 'stu-').toLowerCase() === code ||
+              studentName.includes(code) ||
+              code.includes(studentName)
+            );
+          });
         });
 
         if (matched.length === 0) {
           setValidationError(
-            'No valid student profiles match the entered invite code(s). Please try default codes STU-1 or STU-arman.'
+            'No valid student profiles match the entered invite code(s) or names. Please try default codes STU-1, STU-arman, or student name Arman.'
           );
           setIsSubmitting(false);
           return;

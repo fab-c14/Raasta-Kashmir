@@ -39,6 +39,13 @@ export async function connectStore(mongoUri) {
       UserModel = mongoose.model('User', userSchema);
       StudentModel = mongoose.model('Student', studentSchema);
       usingMongo = true;
+
+      // Auto-seed default students if the collection is empty
+      const count = await StudentModel.countDocuments();
+      if (count === 0) {
+        await StudentModel.insertMany(seed.students);
+        console.log(`Auto-seeded ${seed.students.length} default students into MongoDB.`);
+      }
     } catch (error) {
       console.warn('MongoDB unreachable, falling back to in-memory store:', error.message);
     }
