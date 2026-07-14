@@ -28,7 +28,6 @@ const FullMapScreen: React.FC = () => {
         <LiveMap
           busLocation={bus?.location ?? null}
           heading={bus?.heading ?? 0}
-          height={10_000}
           pickupLocation={pickup?.location ?? null}
         />
         <TouchableOpacity

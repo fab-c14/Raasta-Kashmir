@@ -9,6 +9,7 @@ import { useAppTheme } from '../hooks/useAppTheme';
 interface LiveMapProps {
   busLocation: LatLng | null;
   heading?: number;
+  /** Fixed height; omit to fill the parent container (full-screen view). */
   height?: number;
   followBus?: boolean;
   /** Highlights the parent's chosen pickup stop. */
@@ -24,7 +25,7 @@ const GESTURE_GRACE_MS = 12_000;
 export const LiveMap: React.FC<LiveMapProps> = ({
   busLocation,
   heading = 0,
-  height = 300,
+  height,
   followBus = true,
   pickupLocation = null,
   onExpand,
@@ -52,7 +53,13 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   };
 
   return (
-    <View style={[styles.wrap, { height, borderRadius: roundness.lg, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.wrap,
+        height !== undefined ? { height } : styles.fill,
+        { borderRadius: roundness.lg, borderColor: colors.border },
+      ]}
+    >
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
@@ -106,6 +113,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
   },
+  fill: { flex: 1 },
   busMarker: {
     width: 34,
     height: 34,
