@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { CheckCircle2, MessageSquareWarning } from 'lucide-react-native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
@@ -25,30 +26,37 @@ const SchoolComplaintsScreen: React.FC = () => {
   const [complaints, setComplaints] = useState<Complaint[] | null>(null);
   const [updatedId, setUpdatedId] = useState<string | null>(null);
 
+  const mountedRef = useRef(true);
+
   // Load complaints, then run AI triage automatically on any that lack it —
   // the school never has to press an "analyze" button.
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const list = await tripService.getComplaints().catch(() => [] as Complaint[]);
-      if (!mounted) return;
-      setComplaints(list);
-      for (const complaint of list.filter((item) => !item.analysis).slice(0, 6)) {
-        try {
-          const analysis = await aiService.analyzeComplaint(complaint.text);
-          if (!mounted) return;
-          setComplaints((current) =>
-            current?.map((item) => (item.id === complaint.id ? { ...item, analysis } : item)) ?? null
-          );
-        } catch {
-          // Leave the complaint without analysis; it still shows and can be actioned.
-        }
+  const load = useCallback(async (): Promise<void> => {
+    const list = await tripService.getComplaints().catch(() => [] as Complaint[]);
+    if (!mountedRef.current) return;
+    setComplaints(list);
+    for (const complaint of list.filter((item) => !item.analysis).slice(0, 6)) {
+      try {
+        const analysis = await aiService.analyzeComplaint(complaint.text);
+        if (!mountedRef.current) return;
+        setComplaints((current) =>
+          current?.map((item) => (item.id === complaint.id ? { ...item, analysis } : item)) ?? null
+        );
+      } catch {
+        // Leave the complaint without analysis; it still shows and can be actioned.
       }
-    })();
-    return () => {
-      mounted = false;
-    };
+    }
   }, []);
+
+  // Reload on focus so a complaint a parent just submitted appears at once.
+  useFocusEffect(
+    useCallback(() => {
+      mountedRef.current = true;
+      load();
+      return () => {
+        mountedRef.current = false;
+      };
+    }, [load])
+  );
 
   const updateStatus = async (complaint: Complaint, to: ComplaintStatus): Promise<void> => {
     setComplaints((current) =>
@@ -67,7 +75,7 @@ const SchoolComplaintsScreen: React.FC = () => {
     status === 'open' ? 'danger' : status === 'reviewing' ? 'warning' : 'success';
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={load}>
       <ScreenHeader title="Complaints" subtitle="Parent reports, triaged by the AI copilot" />
       {complaints === null ? (
         [0, 1, 2].map((i) => <Skeleton key={i} height={130} style={{ marginBottom: 12 }} />)

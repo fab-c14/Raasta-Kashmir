@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Bus, Minus, ShieldCheck, Siren, TrendingDown, TrendingUp } from 'lucide-react-native';
@@ -31,17 +31,23 @@ const SchoolDashboardScreen: React.FC = () => {
 
   // Each section loads on its own — one slow or failed request never blanks
   // the rest of the dashboard.
-  useEffect(() => {
-    tripService.getFleet().then(setFleet).catch(() => setFleet([]));
-    tripService.getAnalytics().then(setAnalytics).catch(() => setAnalytics(null));
-    aiService.getWeeklyInsights().then(setInsights).catch(() => setInsights([]));
+  const load = useCallback(async (): Promise<void> => {
+    await Promise.allSettled([
+      tripService.getFleet().then(setFleet).catch(() => setFleet([])),
+      tripService.getAnalytics().then(setAnalytics).catch(() => setAnalytics(null)),
+      aiService.getWeeklyInsights().then(setInsights).catch(() => setInsights([])),
+    ]);
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const trendIcon = { up: TrendingUp, down: TrendingDown, flat: Minus };
   const hasSos = events.some((event) => event.type === 'sos');
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={load}>
       <ScreenHeader title="Fleet Monitor" subtitle={user?.schoolName ?? 'School Transport'} showLogout />
 
       {hasSos ? (

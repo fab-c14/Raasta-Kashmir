@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Trophy } from 'lucide-react-native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
@@ -11,15 +11,19 @@ import { DriverRanking } from '../../types/fleet';
 const SchoolRankingsScreen: React.FC = () => {
   const [rankings, setRankings] = useState<DriverRanking[] | null>(null);
 
-  useEffect(() => {
-    tripService
+  const load = useCallback(async (): Promise<void> => {
+    await tripService
       .getRankings()
       .then(setRankings)
       .catch(() => setRankings([]));
   }, []);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={load}>
       <ScreenHeader title="Driver Rankings" subtitle="AI safety scores across the fleet" />
       {rankings === null ? (
         [0, 1, 2, 3].map((i) => <Skeleton key={i} height={72} style={{ marginBottom: 10 }} />)

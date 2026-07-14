@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BadgeCheck, Bus, School, ShieldAlert } from 'lucide-react-native';
@@ -25,10 +25,16 @@ const RtoDashboardScreen: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const { bus: liveBus } = useBusTracking(DEMO_BUS_NO);
 
-  useEffect(() => {
-    tripService.getCompliance().then(setRecords).catch(() => setRecords([]));
-    tripService.getAnalytics().then(setAnalytics).catch(() => setAnalytics(null));
+  const load = useCallback(async (): Promise<void> => {
+    await Promise.allSettled([
+      tripService.getCompliance().then(setRecords).catch(() => setRecords([])),
+      tripService.getAnalytics().then(setAnalytics).catch(() => setAnalytics(null)),
+    ]);
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const schools = records
     ? [...new Set(records.map((record) => record.schoolName))].map((schoolName) => ({
@@ -38,7 +44,7 @@ const RtoDashboardScreen: React.FC = () => {
     : null;
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={load}>
       <ScreenHeader title="Transport Authority" subtitle={`RTO ${user?.rtoCode ?? 'JK-01'} · Srinagar`} showLogout />
 
       <Animated.View entering={FadeInDown.duration(400)}>

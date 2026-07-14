@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { History } from 'lucide-react-native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
@@ -34,12 +34,16 @@ const TripHistoryScreen: React.FC = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Reload whenever the tab regains focus so a just-completed trip appears
+  // immediately; pull-to-refresh covers the rest.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={load}>
       <ScreenHeader title="Trip History" subtitle="Every trip, scored by the AI copilot" />
       {trips === null ? (
         <>

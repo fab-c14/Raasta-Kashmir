@@ -17,6 +17,24 @@ const STORAGE_KEYS = {
   PROFILES_BY_UID: '@raasta_profiles_by_uid',
 };
 
+/** Translate Firebase auth error codes into messages a parent can act on. */
+const friendlyAuthError = (error: unknown): Error => {
+  const code = (error as { code?: string }).code ?? '';
+  const messages: Record<string, string> = {
+    'auth/invalid-credential': 'Incorrect email or password.',
+    'auth/wrong-password': 'Incorrect email or password.',
+    'auth/user-not-found': 'No account found with this email. Register first.',
+    'auth/email-already-in-use': 'This email is already registered. Try signing in instead.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/invalid-email': 'That email address looks invalid.',
+    'auth/network-request-failed': 'Network error — check your internet connection.',
+    'auth/too-many-requests': 'Too many attempts. Wait a minute and try again.',
+    'auth/operation-not-allowed':
+      'Email/password sign-in is not enabled for this Firebase project.',
+  };
+  return new Error(messages[code] ?? 'Something went wrong. Please try again.');
+};
+
 /**
  * Firebase Auth only stores email/password — the Raasta profile (role, bus,
  * school…) lives in our backend (MongoDB), with a local cache so login keeps
@@ -123,7 +141,11 @@ export const authService = {
       await AsyncStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(foundUser));
       return foundUser;
     } else {
-      const userCredential = await signInWithEmailAndPassword(auth, formattedEmail, password);
+      const userCredential = await signInWithEmailAndPassword(auth, formattedEmail, password).catch(
+        (error) => {
+          throw friendlyAuthError(error);
+        }
+      );
       const stored = await profileStore.load(userCredential.user.uid);
       const profile: UserProfile = stored ?? {
         uid: userCredential.user.uid,
@@ -176,7 +198,13 @@ export const authService = {
 
       return newProfile;
     } else {
-      const userCredential = await createUserWithEmailAndPassword(auth, formattedEmail, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formattedEmail,
+        password
+      ).catch((error) => {
+        throw friendlyAuthError(error);
+      });
       await updateProfile(userCredential.user, { displayName: name }).catch(() => undefined);
 
       const newProfile: UserProfile = {
@@ -214,7 +242,9 @@ export const authService = {
       await delay(800);
       console.log(`Mock reset password email sent to ${formattedEmail}`);
     } else {
-      await sendPasswordResetEmail(auth, formattedEmail);
+      await sendPasswordResetEmail(auth, formattedEmail).catch((error) => {
+        throw friendlyAuthError(error);
+      });
     }
   },
 

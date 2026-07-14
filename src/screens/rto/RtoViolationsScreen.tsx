@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { FileWarning, ShieldAlert } from 'lucide-react-native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
@@ -19,20 +19,19 @@ const RtoViolationsScreen: React.FC = () => {
   const [violations, setViolations] = useState<ViolationRecord[] | null>(null);
   const [rankings, setRankings] = useState<DriverRanking[] | null>(null);
 
-  useEffect(() => {
-    Promise.all([tripService.getViolations(), tripService.getRankings()])
-      .then(([violationData, rankingData]) => {
-        setViolations(violationData);
-        setRankings(rankingData);
-      })
-      .catch(() => {
-        setViolations([]);
-        setRankings([]);
-      });
+  const load = useCallback(async (): Promise<void> => {
+    await Promise.allSettled([
+      tripService.getViolations().then(setViolations).catch(() => setViolations([])),
+      tripService.getRankings().then(setRankings).catch(() => setRankings([])),
+    ]);
   }, []);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={load}>
       <ScreenHeader title="Violations" subtitle="Detected automatically from trip telemetry" />
 
       {violations === null ? (

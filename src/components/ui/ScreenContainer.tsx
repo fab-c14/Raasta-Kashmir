@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
@@ -7,15 +7,29 @@ interface ScreenContainerProps {
   children: React.ReactNode;
   scrollable?: boolean;
   contentStyle?: ViewStyle;
+  /** Enables pull-to-refresh; the spinner shows until the promise settles. */
+  onRefresh?: () => Promise<void>;
 }
 
 export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   children,
   scrollable = true,
   contentStyle,
+  onRefresh,
 }) => {
   const { colors, spacing } = useAppTheme();
+  const [refreshing, setRefreshing] = useState(false);
   const padded = { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl };
+
+  const handleRefresh = useCallback(async (): Promise<void> => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [onRefresh]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
@@ -23,6 +37,17 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[padded, contentStyle]}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={[colors.primary]}
+                tintColor={colors.primary}
+                progressBackgroundColor={colors.card}
+              />
+            ) : undefined
+          }
         >
           {children}
         </ScrollView>

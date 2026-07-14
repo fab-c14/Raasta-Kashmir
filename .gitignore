@@ -47,3 +47,8 @@ yarn-error.*
 # Firebase native config (contains API keys)
 google-services.json
 GoogleService-Info.plist
+
+# AI assistant workspace files (local only)
+.claude/
+CLAUDE.md
+AGENTS.md
