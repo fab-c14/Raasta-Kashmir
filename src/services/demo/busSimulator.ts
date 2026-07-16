@@ -1,10 +1,5 @@
-import { BusLiveState, BusStop, TripEvent, TripPoint } from '../../types/trip';
-import {
-  DEMO_BUS_NO,
-  DEMO_DRIVER_NAME,
-  DEMO_ROUTE_PATH,
-  DEMO_STOPS,
-} from '../../constants/demoRoute';
+import { BusLiveState, BusStop, TripEvent, TripPoint, LatLng } from '../../types/trip';
+import { ALL_ROUTES, RouteConfig, DEMO_BUS_NO } from '../../constants/demoRoute';
 import { ETA_FALLBACK_SPEED_KMH } from '../../constants/safety';
 import { bearingDegrees, distanceMeters, interpolate } from '../../utils/geo';
 import { TripMonitor } from '../../utils/tripMonitor';
@@ -18,24 +13,16 @@ const TIME_LAPSE = 14;
 /** Ticks the bus waits at each terminal between trips. */
 const DWELL_TICKS = 40;
 
-const ROUTE_OUT = DEMO_ROUTE_PATH;
-const ROUTE_RET = [...DEMO_ROUTE_PATH].reverse();
-const STOPS_OUT = DEMO_STOPS;
-const STOPS_RET: BusStop[] = [...DEMO_STOPS].reverse();
+class SingleBusSimulator {
+  private routeConfig: RouteConfig;
 
-/**
- * Self-contained demo bus for offline demo mode. Mirrors the server's demo
- * bus lifecycle: outbound trip → completed + dwell at the school → return
- * trip → dwell → repeat, with a scripted overspeed burst and long stop.
- */
-class BusSimulator {
   private stateListeners = new Set<StateListener>();
 
   private eventListeners = new Set<EventListener>();
 
   private timer: ReturnType<typeof setInterval> | null = null;
 
-  private monitor = new TripMonitor(DEMO_ROUTE_PATH);
+  private monitor: TripMonitor;
 
   private outbound = true;
 
@@ -53,21 +40,29 @@ class BusSimulator {
 
   private boardedStops = new Set<string>();
 
-  private state: BusLiveState = this.buildInitialState();
+  private state: BusLiveState;
 
   private recentEvents: TripEvent[] = [];
 
+  constructor(routeConfig: RouteConfig) {
+    this.routeConfig = routeConfig;
+    this.monitor = new TripMonitor(this.routeConfig.path);
+    this.state = this.buildInitialState();
+  }
+
   private buildInitialState(): BusLiveState {
+    const route = this.routeConfig.path;
+    const stops = this.routeConfig.stops;
     return {
-      busNo: DEMO_BUS_NO,
+      busNo: this.routeConfig.busNo,
       tripId: createId('trip'),
-      driverName: DEMO_DRIVER_NAME,
+      driverName: this.routeConfig.driverName,
       status: 'active',
-      location: ROUTE_OUT[0],
-      heading: bearingDegrees(ROUTE_OUT[0], ROUTE_OUT[1]),
+      location: route[0],
+      heading: bearingDegrees(route[0], route[1] || route[0]),
       speedKmh: 0,
       etaMinutes: 28,
-      nextStop: STOPS_OUT[1].name,
+      nextStop: stops[1]?.name ?? stops[0]?.name ?? 'School',
       updatedAt: Date.now(),
     };
   }
@@ -97,7 +92,6 @@ class BusSimulator {
     this.timer = setInterval(() => this.step(), TICK_MS);
   }
 
-  /** Pause the interval when no screen is watching; resumes on subscribe. */
   private stopIfIdle(): void {
     if (this.stateListeners.size > 0 || this.eventListeners.size > 0) return;
     if (this.timer) {
@@ -106,19 +100,22 @@ class BusSimulator {
     }
   }
 
-  private route(): typeof ROUTE_OUT {
-    return this.outbound ? ROUTE_OUT : ROUTE_RET;
+  private route(): LatLng[] {
+    return this.outbound ? this.routeConfig.path : [...this.routeConfig.path].reverse();
   }
 
   private stops(): BusStop[] {
-    return this.outbound ? STOPS_OUT : STOPS_RET;
+    return this.outbound ? this.routeConfig.stops : [...this.routeConfig.stops].reverse();
   }
 
-  /** Scripted speed profile: cruising, one overspeed burst, one long stop. */
   private speedForTick(): number {
     if (this.pauseTicks > 0) return 0;
-    if (this.tick >= 45 && this.tick <= 58) return 56 + Math.random() * 8;
-    return 30 + Math.sin(this.tick / 7) * 8 + Math.random() * 4;
+    // Each bus has a slightly different speed profile based on busNo to not stay perfectly in sync
+    const variance = (this.routeConfig.busNo.charCodeAt(this.routeConfig.busNo.length - 1) ?? 0) % 5;
+    if (this.tick >= (40 + variance * 4) && this.tick <= (52 + variance * 4)) {
+      return 56 + Math.random() * 8; // overspeed burst
+    }
+    return 30 + Math.sin(this.tick / 6) * 8 + Math.random() * 4;
   }
 
   private step(): void {
@@ -144,14 +141,14 @@ class BusSimulator {
         this.progress = 0;
         this.tick = 0;
         this.boardedStops = new Set();
-        this.monitor = new TripMonitor(DEMO_ROUTE_PATH);
+        this.monitor = new TripMonitor(this.routeConfig.path);
         this.state = { ...this.state, tripId: createId('trip') };
         this.publishEvent({
           id: createId('evt'),
           type: 'trip_started',
           message: this.outbound
-            ? 'Morning trip started from Lal Chowk'
-            : 'Return trip started from the school',
+            ? `Morning trip started from ${stops[0].name}`
+            : `Return trip started from ${stops[0].name}`,
           timestamp: Date.now(),
         });
       }
@@ -168,8 +165,10 @@ class BusSimulator {
     }
 
     this.tick += 1;
-    if (this.outbound && this.segment === 45 && this.pauseTicks === 0 && this.progress < 0.1) {
-      this.pauseTicks = 100; // scripted long stop near Hawal
+    // Scripted pause around 40% along the route
+    const pauseSegment = Math.floor(route.length * 0.4);
+    if (this.outbound && this.segment === pauseSegment && this.pauseTicks === 0 && this.progress < 0.1) {
+      this.pauseTicks = 100; // scripted long stop
     }
     if (this.pauseTicks > 0) this.pauseTicks -= 1;
 
@@ -258,4 +257,42 @@ class BusSimulator {
   }
 }
 
-export const busSimulator = new BusSimulator();
+class MultiBusSimulator {
+  private simulators = new Map<string, SingleBusSimulator>();
+
+  constructor() {
+    ALL_ROUTES.forEach((route) => {
+      this.simulators.set(route.busNo, new SingleBusSimulator(route));
+    });
+  }
+
+  private getSimulator(busNo: string): SingleBusSimulator {
+    let sim = this.simulators.get(busNo);
+    if (!sim) {
+      // Fallback route configuration for unrecognized bus numbers
+      const routeA = ALL_ROUTES[0];
+      const customConfig: RouteConfig = {
+        ...routeA,
+        busNo,
+        routeName: `Route for ${busNo}`,
+      };
+      sim = new SingleBusSimulator(customConfig);
+      this.simulators.set(busNo, sim);
+    }
+    return sim;
+  }
+
+  getSnapshot(busNo: string = DEMO_BUS_NO): BusLiveState {
+    return this.getSimulator(busNo).getSnapshot();
+  }
+
+  getRecentEvents(busNo: string = DEMO_BUS_NO): TripEvent[] {
+    return this.getSimulator(busNo).getRecentEvents();
+  }
+
+  subscribe(busNo: string, onState: StateListener, onEvent?: EventListener): () => void {
+    return this.getSimulator(busNo).subscribe(onState, onEvent);
+  }
+}
+
+export const busSimulator = new MultiBusSimulator();

@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/Badge';
 import { useBusTracking } from '../../hooks/useBusTracking';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
-import { DEMO_STOPS } from '../../constants/demoRoute';
+import { ALL_ROUTES } from '../../constants/demoRoute';
 import { AppStackParamList } from '../../navigation/types';
 import { tripService } from '../../services/tripService';
 import { LatLng } from '../../types/trip';
@@ -22,7 +22,9 @@ const FullMapScreen: React.FC = () => {
   const navigation = useNavigation();
   const { colors, shadows } = useAppTheme();
   const { bus } = useBusTracking(params.busNo);
-  const pickup = DEMO_STOPS.find((stop) => stop.name === params.pickupStopName);
+
+  const routeConfig = ALL_ROUTES.find((r) => r.busNo === params.busNo) ?? ALL_ROUTES[0];
+  const pickup = routeConfig.stops.find((stop) => stop.name === params.pickupStopName);
   const [idleBuses, setIdleBuses] = useState<{ busNo: string; location: LatLng }[]>([]);
   const [stopCounts, setStopCounts] = useState<Record<string, number>>({});
 
@@ -45,7 +47,7 @@ const FullMapScreen: React.FC = () => {
   // Other fleet buses are parked at the school; spread them slightly so the
   // markers don't stack on one point.
   useEffect(() => {
-    const school = DEMO_STOPS[DEMO_STOPS.length - 1].location;
+    const school = routeConfig.stops[routeConfig.stops.length - 1].location;
     tripService
       .getFleet()
       .then((fleet) =>
@@ -62,7 +64,7 @@ const FullMapScreen: React.FC = () => {
         )
       )
       .catch(() => setIdleBuses([]));
-  }, [params.busNo]);
+  }, [params.busNo, routeConfig]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top']}>
@@ -73,6 +75,8 @@ const FullMapScreen: React.FC = () => {
           pickupLocation={pickup?.location ?? null}
           idleBuses={idleBuses}
           stopStudentCounts={stopCounts}
+          routePath={routeConfig.path}
+          stops={routeConfig.stops}
         />
         <TouchableOpacity
           accessibilityRole="button"

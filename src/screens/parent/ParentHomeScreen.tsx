@@ -20,7 +20,7 @@ import { useBusTracking } from '../../hooks/useBusTracking';
 import { usePickupProximity } from '../../hooks/usePickupProximity';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
-import { DEMO_BUS_NO, DEMO_STOPS } from '../../constants/demoRoute';
+import { DEMO_BUS_NO, ALL_ROUTES } from '../../constants/demoRoute';
 import { AppStackParamList } from '../../navigation/types';
 import { Student } from '../../types/fleet';
 import { tripService } from '../../services/tripService';
@@ -28,8 +28,6 @@ import { tripService } from '../../services/tripService';
 type Navigation = NativeStackNavigationProp<AppStackParamList>;
 
 const PICKUP_KEY = '@raasta_pickup_stop';
-// The final stop is the school itself — not a pickup point.
-const PICKUP_STOPS = DEMO_STOPS.slice(0, -1);
 
 const proximityMessage: Record<string, string> = {
   approaching: 'Bus is about 1 km away — get ready.',
@@ -54,6 +52,9 @@ const ParentHomeScreen: React.FC = () => {
 
   const busNo = selectedStudent?.busNo ?? user?.assignedBusNo ?? DEMO_BUS_NO;
   const { bus, events } = useBusTracking(busNo);
+
+  const routeConfig = ALL_ROUTES.find((r) => r.busNo === busNo) ?? ALL_ROUTES[0];
+  const PICKUP_STOPS = routeConfig.stops.slice(0, -1);
 
   const pickupStop = PICKUP_STOPS.find((stop) => stop.name === pickupName) ?? null;
   const proximity = usePickupProximity(bus, pickupStop);
@@ -308,6 +309,8 @@ const ParentHomeScreen: React.FC = () => {
               height={260}
               pickupLocation={pickupStop?.location ?? null}
               onExpand={() => navigation.navigate('FullMap', { busNo, pickupStopName: pickupName ?? undefined })}
+              routePath={routeConfig.path}
+              stops={routeConfig.stops}
             />
           </Animated.View>
 

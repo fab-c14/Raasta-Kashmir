@@ -14,7 +14,7 @@ interface BusTracking {
 export const useBusTracking = (busNo: string): BusTracking => {
   const [bus, setBus] = useState<BusLiveState | null>(null);
   const [events, setEvents] = useState<TripEvent[]>(
-    isLiveBackend ? [] : busSimulator.getRecentEvents()
+    isLiveBackend ? [] : busSimulator.getRecentEvents(busNo)
   );
 
   useEffect(() => {

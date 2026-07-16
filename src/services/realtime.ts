@@ -33,7 +33,7 @@ class RealtimeService {
     onEvent?: EventListener
   ): () => void {
     if (!isLiveBackend) {
-      return busSimulator.subscribe(onState, onEvent);
+      return busSimulator.subscribe(busNo, onState, onEvent);
     }
     const socket = this.ensureSocket();
     let receivedLiveState = false;
@@ -57,7 +57,7 @@ class RealtimeService {
 
     const fallbackTimer = setTimeout(() => {
       if (!receivedLiveState) {
-        fallbackUnsubscribe = busSimulator.subscribe(onState, onEvent);
+        fallbackUnsubscribe = busSimulator.subscribe(busNo, onState, onEvent);
       }
     }, 8000);
 

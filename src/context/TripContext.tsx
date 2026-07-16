@@ -9,6 +9,8 @@ import {
   DEMO_STOPS,
   SCHOOL_LOCATION,
   DEMO_BUS_NO,
+  ALL_ROUTES,
+  RouteConfig,
 } from '../constants/demoRoute';
 import { TripMonitor, computeSafetyScore } from '../utils/tripMonitor';
 import {
@@ -65,6 +67,7 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const upcomingPickupRef = useRef<UpcomingPickup | null>(null);
   const notifiedStopsRef = useRef<string[]>([]);
   const busStudentsRef = useRef<Student[]>([]);
+  const activeRouteRef = useRef<RouteConfig>(ALL_ROUTES[0]);
 
   useEffect(() => () => stopWatchingRef.current?.(), []);
 
@@ -112,8 +115,12 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const current = tripRef.current;
       if (!current || current.status !== 'active') return;
 
+      const pathPoints = activeRouteRef.current.path;
+      const routeStops = activeRouteRef.current.stops;
+
       // 1. Check auto-stop condition: if bus is near the school, end trip.
-      const distToSchool = distanceMeters(point, SCHOOL_LOCATION);
+      const schoolLoc = pathPoints[pathPoints.length - 1];
+      const distToSchool = distanceMeters(point, schoolLoc);
       if (distToSchool < 150) {
         endTrip();
         return;
@@ -124,8 +131,8 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // are disabled — comparing real GPS to a route the bus was never on
       // would flag nonsense deviations.
       if (!monitorRef.current) {
-        offDemoRouteRef.current = distanceToPathMeters(point, DEMO_ROUTE_PATH_A) > 2000;
-        monitorRef.current = new TripMonitor(offDemoRouteRef.current ? [] : DEMO_ROUTE_PATH_A);
+        offDemoRouteRef.current = distanceToPathMeters(point, pathPoints) > 2000;
+        monitorRef.current = new TripMonitor(offDemoRouteRef.current ? [] : pathPoints);
       }
 
       const previous = current.path[current.path.length - 1];
@@ -151,7 +158,7 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       for (const student of currentStudents) {
         if (!student.pickupStop) continue;
-        const stop = DEMO_STOPS.find((s) => s.name === student.pickupStop);
+        const stop = routeStops.find((s) => s.name === student.pickupStop);
         if (!stop) continue;
 
         const dist = distanceMeters(point, stop.location);
@@ -179,7 +186,7 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUpcomingPickup(null);
       }
 
-      const remainingM = remainingPathMeters(point, DEMO_ROUTE_PATH_A);
+      const remainingM = remainingPathMeters(point, pathPoints);
       const etaSpeed = Math.max(point.speedKmh, ETA_FALLBACK_SPEED_KMH);
       const offRoute = offDemoRouteRef.current;
       realtimeService.publishDriverState({
@@ -195,8 +202,8 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
           : Math.max(1, Math.min(999, Math.round(remainingM / 1000 / (etaSpeed / 60)))),
         nextStop: offRoute
           ? 'En route'
-          : DEMO_STOPS.find((stop) => distanceMeters(point, stop.location) < remainingM)?.name ??
-            DEMO_STOPS[DEMO_STOPS.length - 1].name,
+          : routeStops.find((stop) => distanceMeters(point, stop.location) < remainingM)?.name ??
+            routeStops[routeStops.length - 1].name,
         updatedAt: point.timestamp,
       });
     },
@@ -206,6 +213,12 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const startTrip = useCallback(
     async (profile: UserProfile, routePath: LatLng[] = simulationRoutePath): Promise<void> => {
       const startedAt = Date.now();
+
+      // Look up selected route configuration by path coordinates or vehicle number
+      const routeConfig = ALL_ROUTES.find((r) => r.path === routePath) ??
+                          ALL_ROUTES.find((r) => r.busNo === profile.vehicleNo) ??
+                          ALL_ROUTES[0];
+      activeRouteRef.current = routeConfig;
 
       // Load students
       try {
@@ -228,7 +241,7 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
         busNo: profile.vehicleNo ?? 'JK-01-A-1234',
         driverId: profile.uid,
         driverName: profile.name,
-        routeName: DEMO_ROUTE_NAME,
+        routeName: routeConfig.routeName,
         status: 'active',
         startedAt,
         distanceKm: 0,
@@ -239,7 +252,7 @@ export const TripProvider: React.FC<{ children: React.ReactNode }> = ({ children
           {
             id: createId('evt'),
             type: 'trip_started',
-            message: 'Trip started',
+            message: `Trip started on route: ${routeConfig.routeName}`,
             timestamp: startedAt,
           },
         ],

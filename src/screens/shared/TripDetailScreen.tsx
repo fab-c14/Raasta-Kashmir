@@ -15,6 +15,7 @@ import { AppStackParamList } from '../../navigation/types';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { typography } from '../../theme/typography';
 import { formatDate, formatDuration, formatSpeed } from '../../utils/format';
+import { ALL_ROUTES } from '../../constants/demoRoute';
 
 type DetailRoute = RouteProp<AppStackParamList, 'TripDetail'>;
 
@@ -24,6 +25,8 @@ const TripDetailScreen: React.FC = () => {
   const { trip } = params;
   const alerts = trip.events.filter((e) => e.type !== 'trip_started' && e.type !== 'trip_ended');
   const lastPoint = trip.path[trip.path.length - 1] ?? null;
+
+  const routeConfig = ALL_ROUTES.find((r) => r.busNo === trip.busNo) ?? ALL_ROUTES[0];
 
   return (
     <ScreenContainer>
@@ -46,7 +49,13 @@ const TripDetailScreen: React.FC = () => {
       </View>
 
       <SectionTitle title="Route" />
-      <LiveMap busLocation={lastPoint} height={220} followBus={false} />
+      <LiveMap
+        busLocation={lastPoint}
+        height={220}
+        followBus={false}
+        routePath={routeConfig.path}
+        stops={routeConfig.stops}
+      />
 
       {trip.aiSummary && trip.aiReport ? (
         <>

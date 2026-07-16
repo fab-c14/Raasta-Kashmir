@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View, TextInput } from 'react-native';
+import { Alert, StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -24,6 +24,7 @@ import {
   DEMO_ROUTE_PATH_A,
   DEMO_ROUTE_PATH_B,
   SCHOOL_LOCATION,
+  ALL_ROUTES,
 } from '../../constants/demoRoute';
 import { AppStackParamList } from '../../navigation/types';
 import { formatKm } from '../../utils/format';
@@ -46,6 +47,7 @@ const DriverHomeScreen: React.FC = () => {
     triggerSos,
     notifyParentOfPickup,
     setSimulationRoute,
+    simulationRoutePath,
   } = useTrip();
   const { colors, spacing } = useAppTheme();
   const navigation = useNavigation<Navigation>();
@@ -68,6 +70,20 @@ const DriverHomeScreen: React.FC = () => {
     return counts;
   }, [busStudents]);
 
+  const selectedRouteConfig = React.useMemo(() => {
+    return ALL_ROUTES.find((r) => r.path === simulationRoutePath) ?? ALL_ROUTES[0];
+  }, [simulationRoutePath]);
+
+  const activeRouteStops = selectedRouteConfig.stops;
+
+  // Set initial simulation route on mount based on driver's vehicle number
+  useEffect(() => {
+    if (user && !trip) {
+      const driverRoute = ALL_ROUTES.find((r) => r.busNo === user.vehicleNo) ?? ALL_ROUTES[0];
+      setSimulationRoute(driverRoute.path);
+    }
+  }, [user, trip, setSimulationRoute]);
+
   // 1. Passive Auto-Start Effect
   useEffect(() => {
     if (!user || trip) return;
@@ -82,23 +98,26 @@ const DriverHomeScreen: React.FC = () => {
       const hasPermission = await locationService.requestPermission();
       if (!active) return;
 
+      const driverRoute = ALL_ROUTES.find((r) => r.busNo === user.vehicleNo) ?? ALL_ROUTES[0];
+      const schoolLoc = driverRoute.path[driverRoute.path.length - 1];
+
       if (hasPermission) {
         const location = await locationService.getCurrentLocation();
         if (!active) return;
 
         if (location) {
-          const dist = distanceMeters(location, SCHOOL_LOCATION);
+          const dist = distanceMeters(location, schoolLoc);
           // If driver is outside school (>150m), auto-start!
           if (dist > 150) {
-            await startTrip(user, DEMO_ROUTE_PATH_A);
+            await startTrip(user, driverRoute.path);
           }
         } else {
           // If GPS coordinate cannot be resolved, default to auto-start simulation
-          await startTrip(user, DEMO_ROUTE_PATH_A);
+          await startTrip(user, driverRoute.path);
         }
       } else {
         // If permission denied, auto-start simulation
-        await startTrip(user, DEMO_ROUTE_PATH_A);
+        await startTrip(user, driverRoute.path);
       }
     };
 
@@ -110,7 +129,7 @@ const DriverHomeScreen: React.FC = () => {
   }, [user, trip, startTrip]);
 
   const handleStart = async (): Promise<void> => {
-    if (user) await startTrip(user, isDiverging ? DEMO_ROUTE_PATH_B : DEMO_ROUTE_PATH_A);
+    if (user) await startTrip(user, isDiverging ? DEMO_ROUTE_PATH_B : simulationRoutePath);
   };
 
   const handleEnd = async (): Promise<void> => {
@@ -121,7 +140,7 @@ const DriverHomeScreen: React.FC = () => {
   const handleRouteToggle = () => {
     const nextDiverging = !isDiverging;
     setIsDiverging(nextDiverging);
-    setSimulationRoute(nextDiverging ? DEMO_ROUTE_PATH_B : DEMO_ROUTE_PATH_A);
+    setSimulationRoute(nextDiverging ? DEMO_ROUTE_PATH_B : selectedRouteConfig.path);
   };
 
   const handleSos = (): void => {
@@ -135,7 +154,7 @@ const DriverHomeScreen: React.FC = () => {
     <ScreenContainer>
       <ScreenHeader
         title={`Salaam, ${user?.name.split(' ')[0] ?? 'Driver'}`}
-        subtitle={user?.vehicleNo ?? DEMO_ROUTE_NAME}
+        subtitle={user?.vehicleNo ? `${user.vehicleNo} · ${selectedRouteConfig.routeName}` : selectedRouteConfig.routeName}
         showLogout
       />
 
@@ -146,6 +165,8 @@ const DriverHomeScreen: React.FC = () => {
           followBus={trip !== null}
           stopStudentCounts={stopStudentCounts}
           onExpand={() => navigation.navigate('FullMap', { busNo: user?.vehicleNo ?? DEMO_BUS_NO })}
+          routePath={simulationRoutePath}
+          stops={activeRouteStops}
         />
       </Animated.View>
 
@@ -274,6 +295,47 @@ const DriverHomeScreen: React.FC = () => {
         <Text style={[typography.caption, { color: colors.textSecondary, marginTop: 6 }]}>
           GPS unavailable — demo drive simulation active
         </Text>
+      ) : null}
+
+      {!trip ? (
+        <Animated.View entering={FadeInDown.delay(120).duration(400)} style={{ marginTop: spacing.md }}>
+          <SectionTitle title="Select Driving Route" />
+          {ALL_ROUTES.map((rConfig) => {
+            const isSelected = rConfig.path === simulationRoutePath;
+            return (
+              <TouchableOpacity
+                key={rConfig.busNo}
+                onPress={() => setSimulationRoute(rConfig.path)}
+                activeOpacity={0.7}
+              >
+                <AppCard
+                  style={{
+                    marginBottom: spacing.xs,
+                    borderWidth: isSelected ? 2 : 1,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    padding: 12,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={[typography.titleMedium, { color: colors.textPrimary, fontFamily: 'Poppins-SemiBold' }]}>
+                        {rConfig.routeName}
+                      </Text>
+                      <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
+                        Bus: {rConfig.busNo} · Driver: {rConfig.driverName}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <View style={{ backgroundColor: colors.primary, borderRadius: 12, width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+                        <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                      </View>
+                    )}
+                  </View>
+                </AppCard>
+              </TouchableOpacity>
+            );
+          })}
+        </Animated.View>
       ) : null}
 
       <Animated.View entering={FadeInDown.delay(160).duration(400)} style={{ marginTop: spacing.lg }}>

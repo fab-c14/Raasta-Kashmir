@@ -1,136 +1,182 @@
 # Raasta Kashmir
+
 ### **Every School Trip. Safe. Smart. Connected.**
 
-AI-powered School Transport Safety Platform for Parents, Schools, Bus Drivers, and Transport Authorities (RTO) — built to run on **only the driver's phone**. No expensive IoT, no CCTV, no extra hardware.
+<p align="center">
+  <img src="./assets/icon.png" alt="Raasta Kashmir Logo" width="120" height="120" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-emerald.svg?style=flat-square" alt="License: MIT" />
+  <img src="https://img.shields.io/badge/Expo-SDK%2054-blueviolet.svg?style=flat-square" alt="Expo SDK: 54" />
+  <img src="https://img.shields.io/badge/language-TypeScript-blue.svg?style=flat-square" alt="Language: TypeScript" />
+  <img src="https://img.shields.io/badge/Node.js-%3E%3D18-green.svg?style=flat-square" alt="Node: >=18" />
+  <img src="https://img.shields.io/badge/database-MongoDB-darkgreen.svg?style=flat-square" alt="Database: MongoDB" />
+</p>
+
+Raasta Kashmir is a modern, pure-software school transport safety and real-time tracking platform. It connects Parents, School Administrators, Bus Drivers, and Regional Transport Officers (RTO) in a unified ecosystem designed to keep children safe during their daily commute - operating completely from a driver's smartphone without requiring expensive proprietary GPS transponders, IoT hardware, or OBD-II readers.
+
+> [!NOTE]
+> Unlike traditional vehicle tracking systems, Raasta Kashmir operates entirely on standard mobile hardware. The app leverages the driver's phone sensors and GPS to run a lightweight local safety engine that calculates overspeeding, deviations, and stop dwell times in real time.
 
 ---
 
-## 🌟 Hackathon Highlights & Unique Innovation
+## <img src="https://img.shields.io/badge/Features-Overview-34495e?style=flat-square" alt="Features Overview Badge" />
 
-While typical tracking apps rely on custom hardware or simple GPS dots, **Raasta Kashmir** implements a pure-software safety engine that operates completely from the driver's smartphone. We have designed unique features that stand out:
+### <img src="https://img.shields.io/badge/1._Driver_Console-00b894?style=flat-square" alt="Driver Application Badge" />
+- **Zero-Friction Workflow:** Uses geofencing to automatically start trips when leaving school zones (>150m) and end them upon arrival.
+- **Telemetry Console:** Live speed monitoring with visual warnings against the local speed limits.
+- **Stop Proximity & Boarding:** Detects upcoming pickup points, lists students waiting at each stop, and provides a quick messaging portal.
+- **Emergency SOS:** Instant one-tap SOS trigger broadcasts red alerts and real-time locations to school authorities and parents.
 
-*   🔄 **Automatic Trip Lifecycle:** Pure hands-free operation. The trip starts automatically when the driver is outside the school premises and auto-stops once within the school zone (150m geofence), creating a zero-friction driver workflow.
-*   🚦 **Dynamic Route Deviation Engine:** Supports **Route A** (school assigned route) and **Route B** (detours). If a driver diverges from Route A, the safety engine immediately flags a *Route Deviation event* and alerts school admins and parents in real time.
-*   📍 **Driver Boarding & Proximity Console:** Detects approaching pickup stops. Within 400m of a stop, it alerts the driver to student boardings (e.g. *Nowhatta: Pick up Arman*) and opens a quick message bar.
-- 💬 **Parent Direct Messaging:** Drivers can send quick status updates (*"Arriving in 2m"*, *"Traffic delay"*) or custom messages directly to parents in real-time.
-*   🔐 **Parent-Student Invite Linkage:** Closed-loop invite codes (e.g., `STU-1`, `STU-ARMAN`) connect parents securely to student profiles. Parents can link multiple kids and switch between tabs dynamically.
-*   🧠 **Persistent AI Safety Copilot:** Leverages Google Gemini to generate trip summaries, safety grading, and auto-triage parent complaints. All AI reports are cached and persisted to MongoDB/AsyncStorage, ensuring instant loads and zero token waste.
+### <img src="https://img.shields.io/badge/2._Parent_Portal-6c5ce7?style=flat-square" alt="Parent Portal Badge" />
+- **Real-time Bus Tracking:** Follow the assigned bus on a live map with heading, current speed, and dynamic ETA calculations.
+- **Smart Proximity Alerts:** Notifications when the bus enters `approaching` (1 km) or `imminent` (500m) thresholds of their selected pickup stop.
+- **Invite-Link Verification:** Connect parents securely to student profiles using secure invite codes (e.g. `STU-1`).
+- **Direct Report Filing:** Report transport concerns directly to the school administration with instant AI category and severity triaging.
+
+### <img src="https://img.shields.io/badge/3._School_Dashboard-0984e3?style=flat-square" alt="School Dashboard Badge" />
+- **Live Fleet Monitor:** Observe all active buses, live locations, and status tags (Live, Idle, Done, SOS) on a central dashboard.
+- **AI Fleet Insights:** Automated weekly reports summarizing fleet performance trends, safety scores, and recurring hazard hotspots.
+- **Smart Complaints Inbox:** View and manage parent concerns automatically categorized and prioritized by an AI triage engine.
+
+### <img src="https://img.shields.io/badge/4._RTO_Inspectorate-2d3436?style=flat-square" alt="RTO Dashboard Badge" />
+- **Compliance & Audits:** Monitor vehicle insurance, fitness certificates, and road permits.
+- **Violation Logs:** Track historical speeding events, unauthorized detours, and trigger alerts.
+- **Driver Performance Leaderboard:** View and rank drivers according to historical safety indices to reward compliance.
 
 ---
 
-## ⚡ Quick Start (Demo Mode — Zero Keys Needed)
+## <img src="https://img.shields.io/badge/Demo-Credentials-fdcb6e?style=flat-square" alt="Demo Credentials Badge" />
 
-You can run and test every single feature immediately in simulated demo mode with **no API keys, database setup, or Firebase configuration**:
+You can log into the application using the following mock credentials in offline/demo mode:
 
+| Role | Account Email | Initial View & Primary Capability |
+| :--- | :--- | :--- |
+| **Driver** | `driver@raasta.com` | Manually start trips, follow routes, report SOS, and send status updates. |
+| **Parent** | `parent@raasta.com` | Follow their child's bus, set pickup stops, and view proximity alerts. |
+| **School Admin** | `school@raasta.com` | Manage the live fleet dashboard, weekly AI insights, and complaint queues. |
+| **RTO Inspector** | `rto@raasta.com` | Review vehicle compliance lists, speed limit violations, and driver rankings. |
+
+> [!TIP]
+> The default password for all demo credentials is `password123`.
+
+---
+
+## <img src="https://img.shields.io/badge/Architecture-&_Tech_Stack-1abc9c?style=flat-square" alt="Architecture & Tech Stack Badge" />
+
+### Client (React Native / Expo)
+- **Framework:** React Native (Expo SDK 54)
+- **Language:** TypeScript
+- **UI Components:** React Native Paper & Lucide React Icons
+- **Maps:** React Native Maps (Google Maps / Apple Maps wrappers)
+- **State Management:** React Context (Auth & Trip Lifecycles)
+- **Animation:** React Native Reanimated
+
+### Backend (Node.js Server)
+- **Runtime:** Node.js (Express framework)
+- **Real-time Transport:** Socket.IO WebSockets
+- **Database:** MongoDB (using Mongoose ODM) with In-Memory fallback
+- **AI Analysis:** Google Gemini API (with heuristic local fallback)
+
+### Project Directory Structure
+```
+├── assets/         # Visual branding, icons, and mockups
+├── src/            # Client Application Codebase
+│   ├── api/        # Axios configuration and backend endpoints
+│   ├── components/ # Reusable UI components (LiveMap, Badges, Cards)
+│   ├── config/     # Environment configurations (Firebase, endpoints)
+│   ├── constants/  # Route coordinates, stops, and safety thresholds
+│   ├── context/    # Global Context states (AuthContext, TripContext)
+│   ├── hooks/      # Custom React hooks (useBusTracking, usePickupProximity)
+│   ├── navigation/ # App navigators and routing configuration
+│   ├── screens/    # Driver, Parent, School, and RTO dashboards
+│   ├── services/   # Location tracking, Socket.IO, and AI services
+│   ├── theme/      # Style guides, color palettes, and typography
+│   └── utils/      # Geo-math, formatting, and route deviation engines
+└── server/         # Express & Socket.IO backend service
+```
+
+---
+
+## <img src="https://img.shields.io/badge/Local-Development_Setup-e67e22?style=flat-square" alt="Local Development Setup Badge" />
+
+Follow these steps to run the application locally on your machine.
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- npm or yarn
+- [Expo Go](https://expo.dev/client) app installed on your physical Android or iOS device to test mobile code
+
+### 1. Environment Configuration
+
+Duplicate the example environment file at the root:
 ```bash
-cp .env.example .env   # empty values are fine
-npm install
-npm start              # scan the QR with Expo Go
+cp .env.example .env
 ```
 
-### **What Demo Mode Offers out-of-the-box:**
--   **Mock Authentication:** Log in instantly as any role (password: `password123`):
-    -   `driver@raasta.com`
-    -   `parent@raasta.com`
-    -   `school@raasta.com`
-    -   `rto@raasta.com`
--   **Live Simulation:** A simulated bus drives the Srinagar route (*Lal Chowk ↔ Kashmir Valley School*) with scripted events (overspeeding, route deviation, parent notifications), letting you see live map updates, ETA counts, and alerts on all dashboards.
--   **On-Device AI Heuristics:** Generates deterministic safety scores, performance reports, and triage recommendations locally.
+The keys are defined as follows:
+
+| Environment Variable | Description | Default Fallback |
+| :--- | :--- | :--- |
+| `EXPO_PUBLIC_API_URL` | The HTTP endpoint for REST backend calls | `http://localhost:4000` |
+| `MONGODB_URI` | MongoDB Connection String for backend storage | In-Memory Database (No setup required) |
+| `GEMINI_API_KEY` | Google Gemini developer API key | Heuristic rule-based fallback analysis |
+| `EXPO_PUBLIC_FIREBASE_*` | Firebase project parameters for live user auth | SQLite-based local user mock db |
+
+> [!IMPORTANT]
+> If you leave these values blank, the client app and server automatically switch to local offline-simulation mode, allowing full testing of maps and notifications without any external setup.
+
+### 2. Client Setup
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Start the Expo server:
+   ```bash
+   npm start
+   ```
+3. Scan the QR code displayed in your terminal using the **Expo Go** app (Android) or the native Camera app (iOS).
+
+### 3. Backend Setup (Optional)
+If you wish to test real-time Socket.IO synchronization or save data to MongoDB:
+1. Navigate to the server folder:
+   ```bash
+   cd server
+   ```
+2. Install server-side dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the server:
+   ```bash
+   npm start
+   ```
+4. Verify the server is running by visiting `http://localhost:4000/health`.
+
+> [!TIP]
+> When testing on a physical mobile device, ensure your computer and phone are connected to the same Wi-Fi network, and use your computer's local LAN IP (e.g. `http://192.168.1.50:4000`) instead of `localhost` in `EXPO_PUBLIC_API_URL`.
 
 ---
 
-## 🚀 Going Live — Environment Integration
+## <img src="https://img.shields.io/badge/Contribution-Guidelines-d35400?style=flat-square" alt="Contribution Guidelines Badge" />
 
-Configure the `.env` file at the root to unlock the production-grade live stack:
+We welcome contributions from developers, designers, and transport safety advocates! To contribute:
 
-| Key | Live System | Description |
-|---|---|---|
-| `EXPO_PUBLIC_API_URL` | Live REST Backend | Syncs with the Express API server |
-| `MONGODB_URI` | Live MongoDB | Persists trips, complaints, and linkages |
-| `EXPO_PUBLIC_FIREBASE_*` | Firebase Auth | Activates real email/password authentication |
-| `GEMINI_API_KEY` | Gemini AI Copilot | Activates live Gemini LLM analysis |
+1. **Fork the Repository** on GitHub.
+2. **Create a Feature Branch** (`git checkout -b feature/amazing-feature`).
+3. **Commit Your Changes** (`git commit -m 'Add some amazing feature'`).
+4. **Push to the Branch** (`git push origin feature/amazing-feature`).
+5. **Open a Pull Request** describing your changes.
 
-### **To Launch Backend Server:**
-```bash
-cd server
-npm install
-npm start        # http://localhost:4000/health verifies live services
-```
+### Contribution Guidelines
+- **Code Style:** Ensure TypeScript types are fully defined. We use strict type checking. Run `npx tsc --noEmit` to verify type safety.
+- **Testing:** Test changes in simulated demo mode to verify they don't break offline fallbacks.
+- **Caching:** Run `npx expo start -c` if you suspect Metro bundling issues.
+- **Pull Requests:** Provide clear descriptions and screenshots if you are updating UI components.
 
 ---
 
-## 📱 Roles & Features Breakdown
+## <img src="https://img.shields.io/badge/Project-License-2980b9?style=flat-square" alt="Project License Badge" />
 
-### 👤 1. Parent Dashboard
--   **Live Tracking:** GPS updates, bearing direction, next stops, and dynamic ETA calculations.
--   **Multi-Student Management:** Tabs to toggle tracking for multiple children linked via invite codes.
--   **Proximity Alerts:** Immiment banner notifications (*"Bus is under 500m away!"*) as the bus nears their stop.
--   **Report Concerns:** File complaints directly to the school with instant AI category and severity triage.
-
-### 🚍 2. Bus Driver App
--   **Automated Lifecycle:** Auto-starts on login/mount if outside school; auto-ends once parked.
--   **Map & Speedometer:** Real-time speed compared against school-zone limits.
--   **Upcoming Pickups:** Displays cards with student boarding lists and parent messaging tools.
--   **Trip Summary:** View safety grades, scores, strengths, and recommendations.
-
-### 🏫 3. School Admin Panel
--   **Fleet Monitor:** Monitor all active buses, live locations, and status tags (Live, Idle, Done, SOS).
--   **Student Directory:** Generate parent invite codes (`STU-1`, `STU-ARMAN`) and monitor connection status.
--   **AI Weekly Insights:** Summarizes fleet performance, recurring danger hotspots, and fitness alerts.
--   **Complaints Inbox:** Sort and resolve parent concerns prioritized by AI severity checks.
-
-### 🛡️ 4. Transport Authority (RTO) Portal
--   **Compliance Dashboard:** Verify vehicle insurance, fitness certificates, and permits.
--   **Violation History:** View speed violations, SOS triggers, and unscheduled stops.
--   **Leaderboards:** Rankings of safest drivers based on historical driving telemetry.
-
----
-
-## 🛠️ Architecture & Tech Stack
-
-```
-src/            Expo SDK 54 + React Native + TypeScript (clean architecture)
-  api/          Axios client and API endpoints
-  components/   Reusable UI elements (Cards, Score Rings, Live Map, Skeletons...)
-  config/       Live/Demo env switching
-  constants/    Safety guidelines, coordinates, and assigned stops
-  context/      Global Contexts (Auth, Trip Lifecycle & safety engine)
-  hooks/        useAppTheme, useBusTracking, usePickupProximity
-  navigation/   Role-based bottom tabs and route stacks
-  screens/      Role specific screens (driver, parent, school, rto, shared)
-  services/     Realtime Socket.IO, tripService, and AI copilot services
-  theme/        Theme palettes and Poppins typography
-  utils/        Geo-math, formatting, and route deviation checkers
-
-server/         Node.js + Express + Socket.IO + MongoDB + Gemini API
-```
-
----
-
-## ⚠️ Notes for Collaborators
-
-1.  **Expo Versioning:** Pinned to **Expo SDK 54** to align with Play Store Expo Go compatibility.
-2.  **Metro Cache:** If you fetch updates and experience import errors, run `npx expo start -c` to clear the cache.
-3.  **Real-Time Sync:** Real-time updates utilize WebSockets via Socket.IO. When testing on a physical phone, ensure your computer and phone are connected to the same Wi-Fi network and use your local LAN IP in `EXPO_PUBLIC_API_URL`.
-
----
-
-## 🔮 Future Improvements & Roadmap
-
-*   **📱 Cross-Platform Executable Compilation:** Built on the robust React Native & Expo SDK ecosystem, the app is ready for immediate distribution as a standalone binary:
-    *   **Android:** Generate installer `.apk` or Google Play `.aab` packages.
-    *   **iOS:** Package to Apple TestFlight and `.ipa` distribution.
-    *   **Desktop Standalones:** Can compile to desktop `.exe` or macOS `.app` runtimes using Electron-based wrappers or React Native Web.
-*   **📶 Offline-First Synchronization (SQLite):** Srinagar's terrain and weather (mountain passes, heavy snow, tunnels) can cause mobile network outages. Implementing local SQLite queues will store telemetry offline on the driver's phone and automatically batch-upload to the MongoDB server once connectivity is restored.
-*   **🏎️ IMU-Based Crash and Rash Driving Detection:** Access the smartphone's built-in accelerometer and gyroscope sensors to measure high G-force events (sudden impacts, harsh braking, or aggressive cornering) and trigger instant automated SOS alerts.
-*   **🗺️ Smart Dynamic Route Optimizations:** AI-based routing engine that adjusts stops in real time according to weather advisories, school hours, and live traffic congestion.
-*   **🎫 Mobile RFID/NFC Boarding:** Leverage the phone's native NFC sensor to allow students to scan their student ID card against the driver's phone, automating boarding checks with zero additional bus modifications.
-
----
-
-## 👥 Contributors
-
-*   **[Fabs](https://fabsfolio.me)**
-    *   💻 Self-taught Full Stack Developer & Programmer (MERN Stack)
-    *   🎓 BCA graduate (Cluster University Srinagar) & pursuing Masters at Kashmir University (UOK)
-    *   📚 Specialized in deep learning neural networking, full-stack AI/ML application development, and open-source contributions.
+This project is licensed under the MIT License - see the [LICENSE](file:///C:/Users/plesi/OneDrive/Desktop/2026/EmlyOpenHack/LICENSE) file for details.

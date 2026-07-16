@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -21,7 +21,7 @@ import { aiService } from '../../services/aiService';
 import { AnalyticsSummary, FleetBus, Student } from '../../types/fleet';
 import { WeeklyInsight } from '../../types/ai';
 import { useBusTracking } from '../../hooks/useBusTracking';
-import { DEMO_BUS_NO } from '../../constants/demoRoute';
+import { DEMO_BUS_NO, ALL_ROUTES } from '../../constants/demoRoute';
 import { AppStackParamList } from '../../navigation/types';
 
 const SchoolDashboardScreen: React.FC = () => {
@@ -32,7 +32,8 @@ const SchoolDashboardScreen: React.FC = () => {
   const [students, setStudents] = useState<Student[] | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [insights, setInsights] = useState<WeeklyInsight[] | null>(null);
-  const { bus: liveBus, events } = useBusTracking(DEMO_BUS_NO);
+  const [selectedBusNo, setSelectedBusNo] = useState(DEMO_BUS_NO);
+  const { bus: liveBus, events } = useBusTracking(selectedBusNo);
 
   // Each section loads on its own — one slow or failed request never blanks
   // the rest of the dashboard.
@@ -52,6 +53,8 @@ const SchoolDashboardScreen: React.FC = () => {
   const trendIcon = { up: TrendingUp, down: TrendingDown, flat: Minus };
   const hasSos = events.some((event) => event.type === 'sos');
 
+  const routeConfig = ALL_ROUTES.find((r) => r.busNo === selectedBusNo) ?? ALL_ROUTES[0];
+
   return (
     <ScreenContainer onRefresh={load}>
       <ScreenHeader title="Fleet Monitor" subtitle={user?.schoolName ?? 'School Transport'} showLogout />
@@ -61,7 +64,7 @@ const SchoolDashboardScreen: React.FC = () => {
           <View style={styles.sosRow}>
             <Siren size={18} color={colors.danger} />
             <Text style={[typography.titleMedium, { color: colors.danger, marginLeft: 8 }]}>
-              ACTIVE SOS — {DEMO_BUS_NO}
+              ACTIVE SOS — {selectedBusNo}
             </Text>
           </View>
         </AppCard>
@@ -72,11 +75,13 @@ const SchoolDashboardScreen: React.FC = () => {
           busLocation={liveBus?.location ?? null}
           heading={liveBus?.heading ?? 0}
           height={210}
-          onExpand={() => navigation.navigate('FullMap', { busNo: DEMO_BUS_NO })}
+          onExpand={() => navigation.navigate('FullMap', { busNo: selectedBusNo })}
+          routePath={routeConfig.path}
+          stops={routeConfig.stops}
         />
         {liveBus ? (
           <Text style={[typography.bodySmall, { color: colors.textSecondary, marginTop: 6 }]} numberOfLines={1}>
-            {DEMO_BUS_NO} · {Math.round(liveBus.speedKmh)} km/h · next stop {liveBus.nextStop}
+            {selectedBusNo} · {Math.round(liveBus.speedKmh)} km/h · next stop {liveBus.nextStop}
           </Text>
         ) : null}
       </Animated.View>
@@ -98,23 +103,37 @@ const SchoolDashboardScreen: React.FC = () => {
         [0, 1, 2].map((i) => <Skeleton key={i} height={74} style={{ marginBottom: 10 }} />)
       ) : (
         fleet.map((busItem, index) => {
-          const isTracked = busItem.busNo === DEMO_BUS_NO && liveBus !== null;
+          const isCurrentlySelected = busItem.busNo === selectedBusNo;
+          const isTracked = isCurrentlySelected && liveBus !== null;
           const status = isTracked ? liveBus.status : busItem.status;
           return (
             <Animated.View key={busItem.busNo} entering={FadeInDown.delay(index * 50).duration(350)}>
-              <AppCard style={styles.busRow}>
-                <Bus size={18} color={colors.primary} />
-                <View style={styles.busBody}>
-                  <Text style={[typography.titleMedium, { color: colors.textPrimary }]}>{busItem.busNo}</Text>
-                  <Text style={[typography.bodySmall, { color: colors.textSecondary }]} numberOfLines={1}>
-                    {busItem.driverName} · {isTracked ? `${Math.round(liveBus.speedKmh)} km/h · ETA ${liveBus.etaMinutes}m` : busItem.routeName}
-                  </Text>
-                </View>
-                <Badge
-                  label={status === 'sos' ? 'SOS' : status === 'active' ? 'Live' : status === 'completed' ? 'Done' : 'Idle'}
-                  tone={status === 'sos' ? 'danger' : status === 'active' ? 'success' : status === 'completed' ? 'info' : 'neutral'}
-                />
-              </AppCard>
+              <TouchableOpacity
+                onPress={() => setSelectedBusNo(busItem.busNo)}
+                activeOpacity={0.7}
+              >
+                <AppCard
+                  style={{
+                    ...styles.busRow,
+                    ...(isCurrentlySelected ? {
+                      borderColor: colors.primary,
+                      borderWidth: 2,
+                    } : {}),
+                  }}
+                >
+                  <Bus size={18} color={isCurrentlySelected ? colors.primary : colors.textSecondary} />
+                  <View style={styles.busBody}>
+                    <Text style={[typography.titleMedium, { color: colors.textPrimary, fontFamily: isCurrentlySelected ? 'Poppins-SemiBold' : 'Poppins-Medium' }]}>{busItem.busNo}</Text>
+                    <Text style={[typography.bodySmall, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {busItem.driverName} · {isTracked ? `${Math.round(liveBus.speedKmh)} km/h · ETA ${liveBus.etaMinutes}m` : busItem.routeName}
+                    </Text>
+                  </View>
+                  <Badge
+                    label={status === 'sos' ? 'SOS' : status === 'active' ? 'Live' : status === 'completed' ? 'Done' : 'Idle'}
+                    tone={status === 'sos' ? 'danger' : status === 'active' ? 'success' : status === 'completed' ? 'info' : 'neutral'}
+                  />
+                </AppCard>
+              </TouchableOpacity>
             </Animated.View>
           );
         })

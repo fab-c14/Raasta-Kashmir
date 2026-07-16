@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Circle, Details, Marker, Polyline, Region } from 'react-native-maps';
 import { Bus, MapPin, Maximize2 } from 'lucide-react-native';
-import { LatLng } from '../types/trip';
+import { LatLng, BusStop } from '../types/trip';
 import { DEMO_REGION, DEMO_ROUTE_PATH, DEMO_STOPS } from '../constants/demoRoute';
 import { useAppTheme } from '../hooks/useAppTheme';
 
@@ -20,6 +20,10 @@ interface LiveMapProps {
   stopStudentCounts?: Record<string, number>;
   /** Shows an expand button that opens the full-screen map. */
   onExpand?: () => void;
+  /** Custom route path polyline points. */
+  routePath?: LatLng[];
+  /** Custom route stops. */
+  stops?: BusStop[];
 }
 
 /** How long the camera leaves the map alone after the user pans or zooms. */
@@ -35,6 +39,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
   idleBuses = [],
   stopStudentCounts,
   onExpand,
+  routePath = DEMO_ROUTE_PATH,
+  stops = DEMO_STOPS,
 }) => {
   const { colors, roundness, isDark, shadows } = useAppTheme();
   const mapRef = useRef<MapView | null>(null);
@@ -75,8 +81,8 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         toolbarEnabled={false}
         userInterfaceStyle={isDark ? 'dark' : 'light'}
       >
-        <Polyline coordinates={DEMO_ROUTE_PATH} strokeColor={colors.primary} strokeWidth={4} />
-        {DEMO_STOPS.map((stop) => (
+        <Polyline coordinates={routePath} strokeColor={colors.primary} strokeWidth={4} />
+        {stops.map((stop) => (
           <Circle
             key={stop.name}
             center={stop.location}
@@ -86,7 +92,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           />
         ))}
         {stopStudentCounts
-          ? DEMO_STOPS.filter((stop) => (stopStudentCounts[stop.name] ?? 0) > 0).map((stop) => (
+          ? stops.filter((stop) => (stopStudentCounts[stop.name] ?? 0) > 0).map((stop) => (
               <Marker
                 key={`count-${stop.name}`}
                 coordinate={stop.location}

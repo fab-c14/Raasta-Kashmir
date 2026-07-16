@@ -1,22 +1,13 @@
-// Server-side demo bus: drives the Srinagar route so parent/school/RTO
+// Server-side demo bus: drives Srinagar routes so parent/school/RTO
 // dashboards are live the moment the server is up — no driver phone needed.
 // Lifecycle mirrors a real school bus: outbound trip → completed + dwell at
 // the school → return trip → dwell → repeat. Yields to real drivers.
 
-import { ROUTE_POINTS, STOP_INDICES } from './routeData.js';
+import { ALL_ROUTES } from './routeData.js';
 
-const BUS_NO = 'JK-01-A-1234';
-const DRIVER = 'Jehangir Dar';
 const TIME_LAPSE = 14;
 /** Seconds the bus waits at each terminal between trips. */
 const DWELL_TICKS = 40;
-
-const ROUTE_OUT = ROUTE_POINTS;
-const ROUTE_RET = [...ROUTE_POINTS].reverse();
-const STOPS_OUT = STOP_INDICES.map((stop) => ({ name: stop.name, i: stop.index }));
-const STOPS_RET = [...STOP_INDICES]
-  .map((stop) => ({ name: stop.name, i: ROUTE_POINTS.length - 1 - stop.index }))
-  .sort((a, b) => a.i - b.i);
 
 const toRad = (d) => (d * Math.PI) / 180;
 const distM = (a, b) => {
@@ -37,7 +28,37 @@ const bearing = (a, b) => {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 };
 
-export function startDemoBus(io, store) {
+function startSingleBus(io, store, routeConfig) {
+  const BUS_NO = routeConfig.busNo;
+  const DRIVER = routeConfig.driverName;
+  const ROUTE_OUT = routeConfig.path;
+  const ROUTE_RET = [...routeConfig.path].reverse();
+
+  const findClosestIndex = (loc, path) => {
+    let min = Infinity;
+    let index = 0;
+    path.forEach((pt, i) => {
+      const d = distM(loc, pt);
+      if (d < min) {
+        min = d;
+        index = i;
+      }
+    });
+    return index;
+  };
+
+  const STOPS_OUT = routeConfig.stops.map((stop) => ({
+    name: stop.name,
+    i: findClosestIndex(stop.location, ROUTE_OUT),
+  }));
+
+  const STOPS_RET = [...routeConfig.stops]
+    .map((stop) => ({
+      name: stop.name,
+      i: findClosestIndex(stop.location, ROUTE_RET),
+    }))
+    .sort((a, b) => a.i - b.i);
+
   let outbound = true;
   let segment = 0;
   let progress = 0;
@@ -46,7 +67,7 @@ export function startDemoBus(io, store) {
   let dwellTicks = 0;
   let boardingTicks = 0;
   let boardedStops = new Set();
-  let tripId = `trip_${Date.now().toString(36)}`;
+  let tripId = `trip_${Date.now().toString(36)}_${BUS_NO.replace(/[^A-Za-z0-9]/g, '')}`;
   let lastOverspeedAt = 0;
   let longStopReported = false;
 
@@ -101,10 +122,10 @@ export function startDemoBus(io, store) {
         tick = 0;
         longStopReported = false;
         boardedStops = new Set();
-        tripId = `trip_${Date.now().toString(36)}`;
+        tripId = `trip_${Date.now().toString(36)}_${BUS_NO.replace(/[^A-Za-z0-9]/g, '')}`;
         emitEvent(
           'trip_started',
-          outbound ? 'Morning trip started from Lal Chowk' : 'Return trip started from the school',
+          outbound ? `Morning trip started from ${stops[0].name}` : `Return trip started from ${stops[0].name}`,
           (outbound ? ROUTE_OUT : ROUTE_RET)[0],
           0
         );
@@ -121,12 +142,15 @@ export function startDemoBus(io, store) {
     }
 
     tick += 1;
-    if (outbound && segment === 45 && pauseTicks === 0 && progress < 0.1) pauseTicks = 100;
+    const pauseSegment = Math.floor(route.length * 0.45);
+    if (outbound && segment === pauseSegment && pauseTicks === 0 && progress < 0.1) pauseTicks = 100;
     if (pauseTicks > 0) pauseTicks -= 1;
 
+    // Speed variance based on busNo
+    const variance = (BUS_NO.charCodeAt(BUS_NO.length - 1) ?? 0) % 5;
     const speedKmh = pauseTicks > 0
       ? 0
-      : tick >= 45 && tick <= 58
+      : tick >= (45 + variance * 3) && tick <= (58 + variance * 3)
         ? 56 + Math.random() * 8
         : 30 + Math.sin(tick / 7) * 8 + Math.random() * 4;
 
@@ -187,9 +211,15 @@ export function startDemoBus(io, store) {
     }
     if (pauseTicks > 0 && pauseTicks < 10 && !longStopReported) {
       longStopReported = true;
-      emitEvent('long_stop', 'Unscheduled stop for 2+ minutes near Hawal', location, 0);
+      emitEvent('long_stop', `Unscheduled stop for 2+ minutes near ${nextStop}`, location, 0);
     }
   }, 1000);
 
-  console.log(`  Demo bus ${BUS_NO} driving the Srinagar route (out-and-back, yields to real drivers)`);
+  console.log(`  Demo bus ${BUS_NO} driving route: ${routeConfig.routeName} (yields to real drivers)`);
+}
+
+export function startDemoBus(io, store) {
+  ALL_ROUTES.forEach((routeConfig) => {
+    startSingleBus(io, store, routeConfig);
+  });
 }
